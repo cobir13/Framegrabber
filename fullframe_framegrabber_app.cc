@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "TinyTIFF/tinytiffwriter.h"
 
-FullFrame::FullFrame(Framegrabber *grabber, int numf, std::string dest_str) {
+void FullFrame::init(Framegrabber *grabber, int numf, std::string dest_str) {
 	numframes = numf;
 	curframe = 0;
 	dest = dest_str;
@@ -11,6 +11,19 @@ FullFrame::FullFrame(Framegrabber *grabber, int numf, std::string dest_str) {
 	width = grabber->width;
 	height = grabber->height;
 	fbuf = (uint16_t*)calloc(sizeof(uint16_t), numframes*width*height);
+}
+
+FullFrame::FullFrame(Framegrabber *grabber, int numf, std::string dest_str) {
+	init(grabber, numf, dest_str);
+}
+
+static char fname_buf[2048];
+FullFrame::FullFrame(Framegrabber *grabber, const char *input) {
+	int numf;
+	if (scanf(input, " %i , %2047s ", &numf, fname_buf) != 2) {
+		throw BadFormatStringException(std::string("Error in creating FullFrame app"));
+	}
+	init(grabber, numf, std::string(fname_buf));
 }
 
 FullFrame::~FullFrame() {

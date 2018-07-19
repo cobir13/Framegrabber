@@ -13,7 +13,10 @@ class Framegrabber {
 public:
 	bool Connect();
 	bool Disconnect();
+	void data_loop();
+	
 	uint32_t width, height;
+	std::list<FramegrabberApp*> apps;
 	
 	
 
@@ -29,9 +32,8 @@ private:
 	PvGenCommand *stop;
 
 	PvDeviceInfo *select_sole_device();
-	std::list<FramegrabberApp*> apps;
 
-	void data_loop();
+
 };
 
 #endif //FRAMEGRABBER_H
