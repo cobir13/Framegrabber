@@ -5,8 +5,9 @@
 class FramegrabberApp {
 	static int curID;
 public:
-	int id = curID++;
+	bool done;
 	virtual bool set_frame(uint16_t *data) = 0;
+	virtual bool save() = 0;
 };
 
 #endif //FRAMEGRABBER_APP_H
