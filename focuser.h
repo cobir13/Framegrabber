@@ -1,13 +1,13 @@
-#ifndef FULLFRAME_FRAMEGRABBER_APP_H
-#define FULLFRAME_FRAMEGRABBER_APP_H
+#ifndef FOCUSER_H
+#define FOCUSER_H
 
 #include "framegrabber.h"
 #include "framegrabber_app.h"
 #include <string>
 
-class FullFrame : FramegrabberApp {
-	FullFrame(Framegrabber *grabber, int numframes, std::string dest);
-	~FullFrame();
+class Focuser : FramegrabberApp {
+	Focuser(Framegrabber *grabber, int numframes, std::string dest, int savex, int savey);
+	~Focuser();
 
 	bool set_frame(uint16_t * data);
 	bool save();
@@ -18,8 +18,9 @@ private:
 	std::string dest;
 	uint16_t *fbuf;
 	uint32_t width, height;
+	int x, y;
 };
 
 
 
-#endif //FULLFRAME_FRAMEGRABBER_APP_H
+#endif //FOCUSER_H
