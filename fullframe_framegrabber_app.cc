@@ -1,5 +1,6 @@
-#include "fullframe_framegrabber_app.h"
 #include <stdlib.h>
+#include <stdexcept>
+#include "fullframe_framegrabber_app.h"
 #include "TinyTIFF/tinytiffwriter.h"
 
 void FullFrame::init(Framegrabber *grabber, int numf, std::string dest_str) {
@@ -11,6 +12,12 @@ void FullFrame::init(Framegrabber *grabber, int numf, std::string dest_str) {
 	width = grabber->width;
 	height = grabber->height;
 	fbuf = (uint16_t*)calloc(sizeof(uint16_t), numframes*width*height);
+	if (!fbuf) {
+		char errmsg[80];
+		sprintf(errmsg, 
+		"Error allocating framebuffer (requested buffer %d bytes)", numframes*width*height*2);
+		throw std::bad_alloc(errmsg);
+	}
 }
 
 FullFrame::FullFrame(Framegrabber *grabber, int numf, std::string dest_str) {
