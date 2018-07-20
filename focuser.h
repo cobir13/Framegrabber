@@ -7,12 +7,17 @@
 
 class Focuser : FramegrabberApp {
 	Focuser(Framegrabber *grabber, int numframes, std::string dest, int savex, int savey);
+	Focuser(Framegrabber *grabber, const char *input);
 	~Focuser();
 
 	bool set_frame(uint16_t * data);
 	bool save();
 
+	//Nothing to do every frame
+	bool update(){};
+
 private:
+	void init();
 	int curframe;
 	int numframes;
 	std::string dest;

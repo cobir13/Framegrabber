@@ -7,10 +7,14 @@
 
 class FullFrame : FramegrabberApp {
 	FullFrame(Framegrabber *grabber, int numframes, std::string dest);
+	FullFrame(Framegrabber *grabber, const char *argstring);
 	~FullFrame();
 
 	bool set_frame(uint16_t * data);
 	bool save();
+
+	//Nothing to do every update.
+	void update(){};
 
 private:
 	int curframe;
@@ -18,6 +22,8 @@ private:
 	std::string dest;
 	uint16_t *fbuf;
 	uint32_t width, height;
+
+	void FullFrame::init(Framegrabber *grabber, int numframes, std::string dest);
 };
 
 

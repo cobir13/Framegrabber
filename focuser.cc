@@ -2,7 +2,21 @@
 #include <stdlib.h>
 #include "TinyTIFF/tinytiffwriter.h"
 
-Focuser::Focuser(Framegrabber *grabber, int numf, std::string dest_str, int savex, int savey) {
+void Focuser::Focuser(Framegrabber *grabber, int numf, std::string dest_str, int savex, int savey) {
+	init(grabber, numf, dest_str, savex, savey);
+}
+
+//If your path has more than 2048 chars, you need to rethink your filing system
+static char fname_buf[2048];
+Focuser::Focuser(Framegrabber *grabber, const char *input) {
+	int numf, savex, savey;
+	if (sscanf(input, " %i , %2047s , %i , %i ", &numf, fname_buf, &savex, &savey) != 4) {
+		throw BadFormatStringException(std::string("Error in creating Focuser app"));
+	}
+	init(grabber, numf, std::string(fname_buf), savex, savey);
+}
+
+void Focuser::init(Framegrabber *grabber, int numf, std::string dest_str, int savex, int savey) {
 	numframes = numf;
 	curframe = 0;
 	dest = dest_str;
