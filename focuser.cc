@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "TinyTIFF/tinytiffwriter.h"
 
-void Focuser::Focuser(Framegrabber *grabber, int numf, std::string dest_str, int savex, int savey) {
+Focuser::Focuser(Framegrabber *grabber, int numf, std::string dest_str, int savex, int savey) {
 	init(grabber, numf, dest_str, savex, savey);
 }
 
@@ -42,6 +42,7 @@ bool Focuser::set_frame(uint16_t *data) {
 			done = true;
 		}
 	}
+	return true;
 }
 
 bool Focuser::save() {

@@ -13,10 +13,7 @@ void FullFrame::init(Framegrabber *grabber, int numf, std::string dest_str) {
 	height = grabber->height;
 	fbuf = (uint16_t*)calloc(sizeof(uint16_t), numframes*width*height);
 	if (!fbuf) {
-		char errmsg[80];
-		sprintf(errmsg, 
-		"Error allocating framebuffer (requested buffer %d bytes)", numframes*width*height*2);
-		throw std::bad_alloc(errmsg);
+		throw std::bad_alloc();
 	}
 }
 
@@ -39,12 +36,15 @@ FullFrame::~FullFrame() {
 
 bool FullFrame::set_frame(uint16_t *data) {
 	if (!done) {
-		fbuf]
+		uint16_t *current_buf = fbuf + (width*height*curframe);
+		memcpy(current_buf, data, width*height * sizeof(uint16_t));
+		curframe++;
 
 		if (curframe >= numframes) {
 			done = true;
 		}
 	}
+	return true;
 }
 
 bool FullFrame::save() {

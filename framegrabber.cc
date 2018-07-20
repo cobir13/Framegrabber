@@ -7,6 +7,7 @@
 #define BUFFER_COUNT (16)
 
 PvDeviceInfo *Framegrabber::select_sole_device() {
+	printf("Looking for devices\n");
 	PvSystem *sys = new PvSystem();
 	sys->Find();
 
@@ -25,6 +26,7 @@ PvDeviceInfo *Framegrabber::select_sole_device() {
 		printf("No (or more than one) devices found.\n");
 		return NULL;
 	}
+	printf("Found device %s\n", (PvDeviceInfo*)devices[0]->GetMACAddress().GetAscii());
 	return (PvDeviceInfo*)devices[0];
 }
 
@@ -40,8 +42,8 @@ void Framegrabber::data_loop() {
 			height = img->GetHeight();
 			uint16_t *vdata = (uint16_t*)(img->GetDataPointer());
 
-			for (auto& app : apps) {
-				app.set_frame(vdata);
+			for (FramegrabberApp *app : apps) {
+				app->set_frame(vdata);
 			}
 		}
 	}
@@ -75,7 +77,7 @@ bool Framegrabber::Connect() {
 
 	device.NegotiatePacketSize();
 
-	printf("Opening stream\n");
+	printf("Opening stream to device\n");
 	stream.Open(dev_info->GetIPAddress());
 
 	device.SetStreamDestination(stream.GetLocalIPAddress(), stream.GetLocalPort());
@@ -87,7 +89,7 @@ bool Framegrabber::Connect() {
 		stream.GetQueuedBufferMaximum() :
 		BUFFER_COUNT;
 	
-
+	buffers = new PvBuffer[buffer_count];
 	for (uint32_t i = 0; i < buffer_count; i++) {
 		buffers[i].Alloc(static_cast<PvUInt32>(size));
 		stream.QueueBuffer(&buffers[i]);
@@ -99,6 +101,8 @@ bool Framegrabber::Connect() {
 
 	dynamic_cast<PvGenCommand *>(params->Get("GevTimestampControlReset"))->Execute();
 	start->Execute();
+
+	printf("Ready for input\n");
 
 	return true;
 }

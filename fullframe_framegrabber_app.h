@@ -5,7 +5,8 @@
 #include "framegrabber_app.h"
 #include <string>
 
-class FullFrame : FramegrabberApp {
+class FullFrame : public FramegrabberApp {
+public:
 	FullFrame(Framegrabber *grabber, int numframes, std::string dest);
 	FullFrame(Framegrabber *grabber, const char *argstring);
 	~FullFrame();

@@ -8,7 +8,7 @@ public:
 	bool done;
 	virtual bool set_frame(uint16_t *data) = 0;
 	virtual bool save() = 0;
-	virtual void update();
+	virtual void update() = 0;
 };
 
 struct BadFormatStringException : public std::runtime_error {

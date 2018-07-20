@@ -5,7 +5,8 @@
 #include "framegrabber_app.h"
 #include <string>
 
-class Focuser : FramegrabberApp {
+class Focuser : public FramegrabberApp {
+public:
 	Focuser(Framegrabber *grabber, int numframes, std::string dest, int savex, int savey);
 	Focuser(Framegrabber *grabber, const char *input);
 	~Focuser();
@@ -14,10 +15,10 @@ class Focuser : FramegrabberApp {
 	bool save();
 
 	//Nothing to do every frame
-	bool update(){};
+	void update(){};
 
 private:
-	void init();
+	void init(Framegrabber *grabber, int numf, std::string dest_str, int savex, int savey);
 	int curframe;
 	int numframes;
 	std::string dest;

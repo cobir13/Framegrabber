@@ -9,6 +9,14 @@
 #include <PvResult.h>
 #include <list>
 
+typedef struct {
+	int wax;
+	int way;
+	int tint;
+	bool WAXY_updated;
+	bool tint_updated;
+} serial_words;
+
 class Framegrabber {
 public:
 	bool Connect();
@@ -16,7 +24,8 @@ public:
 	void data_loop();
 	
 	uint32_t width, height;
-	std::list<FramegrabberApp*> apps;
+	std::list<FramegrabberApp *> apps;
+	serial_words words;
 	
 	
 

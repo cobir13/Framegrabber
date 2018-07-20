@@ -18,12 +18,39 @@
     <ClCompile Include="framegrabber.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="fullframe_framegrabber_app.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TinyTIFF\tinytiffwriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="focuser.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="window.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framegrabber.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="framegrabber_app.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fullframe_framegrabber_app.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TinyTIFF\tinytiffwriter.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="focuser.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="window.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
