@@ -4,11 +4,12 @@
 #include "framegrabber.h"
 #include "framegrabber_app.h"
 #include <string>
+#include <vector>
 
 class FullFrame : public FramegrabberApp {
 public:
 	FullFrame(Framegrabber *grabber, int numframes, std::string dest);
-	FullFrame(Framegrabber *grabber, const char *argstring);
+	FullFrame(Framegrabber *grabber, std::vector<std::string> &argstring);
 	~FullFrame();
 
 	bool set_frame(uint16_t * data);
@@ -18,6 +19,7 @@ public:
 	void update(){};
 
 private:
+	Framegrabber *grabber;
 	int curframe;
 	int numframes;
 	std::string dest;

@@ -1,4 +1,5 @@
 #include "window.h"
+#include "iomanager.h"
 
 static inline uint32_t grey16_to_rgba32(uint16_t pix) {
 	uint8_t pix8 = pix / 256;
@@ -11,16 +12,19 @@ static inline uint32_t grey16_to_rgba32(uint16_t pix) {
 }
 
 Window::Window(Framegrabber *grabber) { init(grabber); }
-Window::Window(Framegrabber *grabber, const char *input) { init(grabber); }
+Window::Window(Framegrabber *grabber, std::vector<std::string> &argstring) { init(grabber); }
 
 
 void Window::init(Framegrabber *grabber) {
+	name = "Window";
+	id = get_id();
 	framegrabber = grabber;
 	done = false;
 	
 	ms_per_frame = DEFAULT_MSPF;
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+
 		throw std::runtime_error("Could not initialize SDL2");
 	}
 
@@ -32,11 +36,13 @@ void Window::init(Framegrabber *grabber) {
 		grabber->height * 2,
 		SDL_WINDOW_SHOWN);
 	if (!window) {
+
 		throw std::runtime_error("Could not create SDL window");
 	}
 
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	if (!renderer) {
+
 		throw std::runtime_error("Could not create SDL renderer");
 	}
 	
@@ -51,6 +57,7 @@ void Window::init(Framegrabber *grabber) {
 		grabber->height
 	);
 	if (!texture) {
+		grabber->iomanager->error("WINDOW", SDL_GetError());
 		throw std::runtime_error("Could not create SDL texture");
 	}
 }

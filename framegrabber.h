@@ -8,6 +8,7 @@
 #include <PvBuffer.h>
 #include <PvResult.h>
 #include <list>
+#include <regex>
 
 typedef struct {
 	int wax;
@@ -17,15 +18,25 @@ typedef struct {
 	bool tint_updated;
 } serial_words;
 
+
+class IOManager;
+
 class Framegrabber {
 public:
+	Framegrabber();
+	~Framegrabber();
+
 	bool Connect();
 	bool Disconnect();
 	void data_loop();
+
+	IOManager *iomanager;
 	
 	uint32_t width, height;
 	std::list<FramegrabberApp *> apps;
 	serial_words words;
+
+
 	
 	
 

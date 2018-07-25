@@ -33,6 +33,9 @@
     <ClCompile Include="main.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="iomanager.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framegrabber.h">
@@ -53,5 +56,14 @@
     <ClInclude Include="window.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="iomanager.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="exceptions.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="communication.txt" />
   </ItemGroup>
 </Project>

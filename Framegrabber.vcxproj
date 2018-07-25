@@ -163,17 +163,23 @@
     <ClCompile Include="focuser.cc" />
     <ClCompile Include="framegrabber.cc" />
     <ClCompile Include="fullframe_framegrabber_app.cc" />
+    <ClCompile Include="iomanager.cc" />
     <ClCompile Include="main.cc" />
     <ClCompile Include="TinyTIFF\tinytiffwriter.cpp" />
     <ClCompile Include="window.cc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="exceptions.h" />
     <ClInclude Include="focuser.h" />
     <ClInclude Include="framegrabber.h" />
     <ClInclude Include="framegrabber_app.h" />
     <ClInclude Include="fullframe_framegrabber_app.h" />
+    <ClInclude Include="iomanager.h" />
     <ClInclude Include="TinyTIFF\tinytiffwriter.h" />
     <ClInclude Include="window.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="communication.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

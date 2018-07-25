@@ -1,5 +1,6 @@
 #include "focuser.h"
 #include <stdlib.h>
+#include "exceptions.h"
 #include "TinyTIFF/tinytiffwriter.h"
 
 Focuser::Focuser(Framegrabber *grabber, int numf, std::string dest_str, int savex, int savey) {
@@ -8,15 +9,28 @@ Focuser::Focuser(Framegrabber *grabber, int numf, std::string dest_str, int save
 
 //If your path has more than 2048 chars, you need to rethink your filing system
 static char fname_buf[2048];
-Focuser::Focuser(Framegrabber *grabber, const char *input) {
-	int numf, savex, savey;
-	if (sscanf(input, " %i , %2047s , %i , %i ", &numf, fname_buf, &savex, &savey) != 4) {
-		throw BadFormatStringException(std::string("Error in creating Focuser app"));
+Focuser::Focuser(Framegrabber *grabber, std::vector<std::string> &argstring) {
+	if (argstring.size() != 4) {
+		throw bad_parameter_exception("Focuser requires four arguments");
 	}
-	init(grabber, numf, std::string(fname_buf), savex, savey);
+	int numf, savex, savey;
+	std::string dest;
+
+	try {
+		numf = stoi(argstring[0]);
+		dest = argstring[1];
+		savex = stoi(argstring[2]);
+		savey = stoi(argstring[3]);
+	}
+	catch (std::invalid_argument &iarg) {
+		throw bad_parameter_exception(iarg.what());
+	}
+
+	init(grabber, numf, dest, savex, savey);
 }
 
 void Focuser::init(Framegrabber *grabber, int numf, std::string dest_str, int savex, int savey) {
+	id = get_id();
 	numframes = numf;
 	curframe = 0;
 	dest = dest_str;

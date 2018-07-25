@@ -3,11 +3,22 @@
 #include <vector>
 #include <stdexcept>
 #include <stdio.h>
+#include "iomanager.h"
 
 #define BUFFER_COUNT (16)
 
+Framegrabber::Framegrabber() {
+	iomanager = new IOManager(this);
+	width = 320;
+	height = 256;
+}
+
+Framegrabber::~Framegrabber() {
+	delete iomanager;
+}
+
 PvDeviceInfo *Framegrabber::select_sole_device() {
-	printf("Looking for devices\n");
+	iomanager->info("CONNECTION", "Looking for devices");
 	PvSystem *sys = new PvSystem();
 	sys->Find();
 
@@ -22,32 +33,38 @@ PvDeviceInfo *Framegrabber::select_sole_device() {
 		}
 	}
 	if (devices.size() != 1) {
-		printf("Devices found: %d\n", devices.size());
-		printf("No (or more than one) devices found.\n");
+		iomanager->fatal("No (or more than one) devices found.");
 		return NULL;
 	}
-	printf("Found device %s\n", (PvDeviceInfo*)devices[0]->GetMACAddress().GetAscii());
+	char msgbuf[1024];
+	sprintf(msgbuf, "Found device %s", (PvDeviceInfo*)devices[0]->GetMACAddress().GetAscii());
+	iomanager->info("CONNECTION", msgbuf);
 	return (PvDeviceInfo*)devices[0];
 }
 
 void Framegrabber::data_loop() {
+	printf("In dl\n");
 	PvBuffer *buffer = NULL;
 	PvResult opResult;
 	
-	PvResult result = stream.RetrieveBuffer(&buffer, &opResult, 100);
+	PvResult result = stream.RetrieveBuffer(&buffer, &opResult, 1000);
 	if (result.IsOK() && opResult.IsOK()) {
 		if (buffer->GetPayloadType() == PvPayloadTypeImage) {
+			printf("Got img\n");
 			PvImage *img = buffer->GetImage();
 			width = img->GetWidth();
 			height = img->GetHeight();
 			uint16_t *vdata = (uint16_t*)(img->GetDataPointer());
 
 			for (FramegrabberApp *app : apps) {
+				printf("setting data for %s\n", app->id);
 				app->set_frame(vdata);
 			}
 		}
+		stream.QueueBuffer(buffer);
 	}
 	else {
+		printf("%s, %s\n", result.GetCodeString().GetAscii(), opResult.GetCodeString().GetAscii());
 		throw std::runtime_error("Error retrieving buffer");
 	}
 }
@@ -56,17 +73,21 @@ bool Framegrabber::Connect() {
 	PvDeviceInfo *dev_info = select_sole_device();
 
 	if (dev_info == nullptr) {
-		printf("No device found\n");
+		iomanager->fatal("No device found");
 		return false;
 	}
 
-	printf("Connecting to %s\n", dev_info->GetMACAddress().GetAscii());
+	char msgbuf[1024];
+	sprintf(msgbuf, "Connecting to device %s", dev_info->GetMACAddress().GetAscii());
+	iomanager->info("CONNECTION", msgbuf);
 	if (device.Connect(dev_info).IsFailure()) {
-		printf("Unable to connect to %s\n", dev_info->GetMACAddress().GetAscii());
+		sprintf(msgbuf, "Unable to connect to %s", dev_info->GetMACAddress().GetAscii());
+		iomanager->fatal(msgbuf);
 		return false;
 	}
 	else {
-		printf("Connected to %s\n", dev_info->GetMACAddress().GetAscii());
+		sprintf(msgbuf, "Connected to %s", dev_info->GetMACAddress().GetAscii());
+		iomanager->success("CONNECTION", msgbuf);
 	}
 
 	params = device.GetGenParameters();
@@ -77,7 +98,7 @@ bool Framegrabber::Connect() {
 
 	device.NegotiatePacketSize();
 
-	printf("Opening stream to device\n");
+	iomanager->info("STREAM", "Opening stream to device");
 	stream.Open(dev_info->GetIPAddress());
 
 	device.SetStreamDestination(stream.GetLocalIPAddress(), stream.GetLocalPort());
@@ -102,7 +123,7 @@ bool Framegrabber::Connect() {
 	dynamic_cast<PvGenCommand *>(params->Get("GevTimestampControlReset"))->Execute();
 	start->Execute();
 
-	printf("Ready for input\n");
+	iomanager->ready();
 
 	return true;
 }

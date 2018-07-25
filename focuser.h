@@ -4,11 +4,12 @@
 #include "framegrabber.h"
 #include "framegrabber_app.h"
 #include <string>
+#include <vector>
 
 class Focuser : public FramegrabberApp {
 public:
 	Focuser(Framegrabber *grabber, int numframes, std::string dest, int savex, int savey);
-	Focuser(Framegrabber *grabber, const char *input);
+	Focuser(Framegrabber *grabber, std::vector<std::string> &argstring);
 	~Focuser();
 
 	bool set_frame(uint16_t * data);

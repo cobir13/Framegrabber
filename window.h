@@ -3,6 +3,7 @@
 #include "framegrabber_app.h"
 #include "framegrabber.h"
 #include <stdint.h>
+#include <vector>
 #include <SDL.h>
 #undef main
 
@@ -12,7 +13,7 @@
 class Window : public FramegrabberApp {
 public:
 	Window(Framegrabber *grabber);
-	Window(Framegrabber *grabber, const char *input);
+	Window(Framegrabber *grabber, std::vector<std::string> &argstring);
 	~Window();
 
 	bool set_frame(uint16_t *data);
