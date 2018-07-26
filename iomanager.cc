@@ -53,23 +53,24 @@ IOManager::~IOManager()
 }
 
 bool IOManager::RunCommand(std::string input) {
+	info(__FUNCTION__, input);
 	std::smatch matches;
 	if (std::regex_match(input, matches, full_command)) {
 		std::string base = matches[1].str();
 		std::string appname = matches[2].str();
 		std::string args = matches[3].str();
 
-		if (base == "stream") {
+		if (base == "STREAM") {
 			printf("Caught stream\n");
 			new_app(appname, args);
 		}
-		else if (base == "word") {
+		else if (base == "WORD") {
 			write_word(appname, args);
 		}
-		else if (base == "getword") {
+		else if (base == "GETWORD") {
 			read_word(appname);
 		}
-		else if (base == "kill") {
+		else if (base == "KILLAPP") {
 			kill_app(appname);
 		}
 		else {
@@ -79,7 +80,7 @@ bool IOManager::RunCommand(std::string input) {
 	else if (std::regex_match(input, matches, stub_command)) {
 		std::string command = matches[1].str();
 		info(__FUNCTION__, command);
-		if (command == std::string("quit")) {
+		if (command == std::string("QUIT")) {
 			info(__FUNCTION__, "Quitting");
 			return false;
 		}
@@ -152,7 +153,7 @@ bool IOManager::read_word(std::string word) {
 		error(__FUNCTION__, wordbuf);
 		return false;
 	}
-	success(__FUNCTION__, wordbuf);
+	success(word, wordbuf);
 	return true;
 }
 
@@ -176,7 +177,7 @@ bool IOManager::new_app(std::string appname, std::string argstring) {
 	}
 	else {
 		grabber->apps.push_back(newapp);
-		success(newapp->getname(), "Initialized!");
+		success(newapp->getname(), std::to_string(newapp->id));
 		return true;
 	}
 }
@@ -199,11 +200,11 @@ void IOManager::log(const char * msg) {
 }
 
 void IOManager::log(const char * type, const char * msg) {
-	fprintf(logfile, "%s %s(\"%s\");\n", timestr(), type, msg);
+	fprintf(logfile, "%s %s (\"%s\");\n", timestr(), type, msg);
 }
 
 void IOManager::log(const char *type, const char *header, const char *msg) {
-	fprintf(logfile, "%s %s %s(\"%s\");\n", timestr(), type, header, msg);
+	fprintf(logfile, "%s %s %s (\"%s\");\n", timestr(), type, header, msg);
 }
 
 char * IOManager::timestr()

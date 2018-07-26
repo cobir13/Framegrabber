@@ -38,11 +38,12 @@ void FGloop(Framegrabber *grabber) {
 
 }
 
+#ifndef FOO
+
 int main(int argc, char **argv) {
     Framegrabber grabber;
 	grabber.Connect();
 	while (1) FGloop(&grabber);
     grabber.Disconnect();
-
-	while (1);
 }
+#endif

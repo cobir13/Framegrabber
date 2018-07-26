@@ -10,6 +10,8 @@
 #include <list>
 #include <regex>
 
+#define FOO
+
 typedef struct {
 	int wax;
 	int way;

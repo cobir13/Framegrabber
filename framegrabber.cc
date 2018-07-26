@@ -1,11 +1,12 @@
 #include "framegrabber.h"
 #include <PvSystem.h>
+#include <PvStreamInfo.h>
 #include <vector>
 #include <stdexcept>
 #include <stdio.h>
 #include "iomanager.h"
 
-#define BUFFER_COUNT (16)
+#define BUFFER_COUNT (120)
 
 Framegrabber::Framegrabber() {
 	iomanager = new IOManager(this);
@@ -43,6 +44,11 @@ PvDeviceInfo *Framegrabber::select_sole_device() {
 }
 
 void Framegrabber::data_loop() {
+	PvStreamInfo info(&stream);
+	iomanager->info(__FUNCTION__, info.GetErrors().GetAscii());
+	iomanager->info(__FUNCTION__, info.GetWarnings(false).GetAscii());
+	iomanager->info(__FUNCTION__, info.GetStatistics(60).GetAscii());
+	iomanager->info(__FUNCTION__, std::to_string(stream.GetQueuedBufferCount()));
 	PvBuffer *buffer = NULL;
 	PvResult opResult;
 	static int i = 0;
@@ -67,6 +73,11 @@ void Framegrabber::data_loop() {
 		char errstr[64];
 		sprintf_s(errstr, 64, "%s, %s", result.GetCodeString().GetAscii(), opResult.GetCodeString().GetAscii());
 		iomanager->error(__FUNCTION__, errstr);
+		PvStreamInfo info(&stream);
+		iomanager->info(__FUNCTION__, info.GetErrors().GetAscii());
+		iomanager->info(__FUNCTION__, info.GetWarnings(false).GetAscii());
+		iomanager->info(__FUNCTION__, info.GetStatistics(60).GetAscii());
+		iomanager->info(__FUNCTION__, std::to_string(stream.GetQueuedBufferCount()));
 		throw std::runtime_error("Error retrieving buffer");
 	}
 }
@@ -83,14 +94,14 @@ bool Framegrabber::Connect() {
 	sprintf(msgbuf, "Connecting to device %s at %s", dev_info->GetMACAddress().GetAscii(),
 		dev_info->GetIPAddress().GetAscii());
 	iomanager->info(__FUNCTION__, msgbuf);
-	if (device.Connect(dev_info).IsFailure()) {
+	if (!device.Connect(dev_info).IsOK()) {
 		sprintf(msgbuf, "Unable to connect to %s", dev_info->GetMACAddress().GetAscii());
 		iomanager->fatal(msgbuf);
 		return false;
 	}
 	else {
 		sprintf(msgbuf, "Connected to %s", dev_info->GetMACAddress().GetAscii());
-		iomanager->success(__FUNCTION__, msgbuf);
+		iomanager->info(__FUNCTION__, msgbuf);
 	}
 
 	params = device.GetGenParameters();
@@ -116,7 +127,10 @@ bool Framegrabber::Connect() {
 	buffers = new PvBuffer[buffer_count];
 	for (uint32_t i = 0; i < buffer_count; i++) {
 		buffers[i].Alloc(static_cast<PvUInt32>(size));
-		stream.QueueBuffer(&buffers[i]);
+	}
+
+	for (uint32_t i = 0; i < buffer_count; i++) {
+		stream.QueueBuffer(buffers + i);
 	}
 
 	if (TLLocked != nullptr) {
@@ -153,3 +167,17 @@ bool Framegrabber::Disconnect() {
 	iomanager->done();
 	return true;
 }
+
+#ifdef FOO
+int main(int argc, char **argv) {
+	Framegrabber f;
+	f.Connect();
+	for (unsigned i = 0; 1; i++) {
+		printf("%d\n", i);
+		try { f.data_loop(); }
+		catch (std::runtime_error &e) { f.iomanager->fatal("it ded rip"); }
+	}
+	f.Disconnect();
+	printf("success\n");
+}
+#endif
