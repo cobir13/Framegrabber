@@ -2,6 +2,9 @@
 #include <regex>
 #include <vector>
 #include <string>
+#include <zmq.h>
+#include <errno.h>
+#include <time.h>
 #include "exceptions.h"
 #include "focuser.h"
 #include "fullframe_framegrabber_app.h"
@@ -32,6 +35,13 @@ IOManager::IOManager(Framegrabber *g) {
 	grabber = g;
 	input = stdin;
 	output = stdout;
+	logfile = fopen("C:/Users/Keck Project/Documents/Framegrabber/framegrabber.log", "w");
+
+	zmq_context = zmq_ctx_new();
+	zmq_responder = zmq_socket(zmq_context, ZMQ_REP);
+	if (zmq_bind(zmq_responder, "tcp://*:5555")) {
+		throw std::runtime_error("Could not bind ZeroMQ socket!");
+	}
 
 	full_command = std::regex("\\s*(\\w*)\\s*(\\w*)\\s*\\(([^)]*)\\);\\s*");
 	stub_command = std::regex("\\s*(\\w*);\\s*");
@@ -49,14 +59,17 @@ bool IOManager::RunCommand(std::string input) {
 		std::string appname = matches[2].str();
 		std::string args = matches[3].str();
 
-		if (base == "STREAM") {
+		if (base == "stream") {
 			printf("Caught stream\n");
 			new_app(appname, args);
 		}
-		else if (base == "WORD") {
+		else if (base == "word") {
 			write_word(appname, args);
 		}
-		else if (base == "KILL") {
+		else if (base == "getword") {
+			read_word(appname);
+		}
+		else if (base == "kill") {
 			kill_app(appname);
 		}
 		else {
@@ -65,9 +78,9 @@ bool IOManager::RunCommand(std::string input) {
 	}
 	else if (std::regex_match(input, matches, stub_command)) {
 		std::string command = matches[1].str();
-		info("IOPARSER", command);
-		if (command == std::string("QUIT")) {
-			info("IOMANAGER", "Quitting");
+		info(__FUNCTION__, command);
+		if (command == std::string("quit")) {
+			info(__FUNCTION__, "Quitting");
 			return false;
 		}
 		else {
@@ -75,18 +88,27 @@ bool IOManager::RunCommand(std::string input) {
 		}
 	}
 	else {
-		error("IOMANAGER", "Parse error");
+		error(__FUNCTION__, "Parse error");
 	}
 }
 
+static char combuf[1024];
 bool IOManager::ManageInput()
 {
-	static char combuf[1024];
-	while (fgets(combuf, 1024, input)) {
-		if (combuf[0] == '\n') {
-			break;
+	while (true) {
+		if (-1 == zmq_recv(zmq_responder, combuf, 1024, ZMQ_DONTWAIT)) {
+			int e = errno;
+			if (e == EAGAIN || e == 0) {
+				break;
+			}
+			else {
+				printf("%s\n", strerror(e));
+				throw std::runtime_error("Error receiving from socket");
+			}
+			// reset for the next go round
+			errno = 0;
 		}
-
+		printf("%c\n", combuf[0]);
 		if (!RunCommand(std::string(combuf))) {
 			return false;
 		}
@@ -97,23 +119,40 @@ bool IOManager::ManageInput()
 bool IOManager::write_word(std::string word, std::string val_str) {
 	int val = std::stoi(val_str);
 
-	if (word == std::string("WAX")) {
+	if (word == std::string("wax")) {
 		grabber->words.wax = val;
 		grabber->words.WAXY_updated = true;
 	}
-	else if (word == std::string("WAY")) {
+	else if (word == std::string("way")) {
 		grabber->words.way = val;
 		grabber->words.WAXY_updated = true;
 	}
-	else if (word == std::string("TINT")) {
+	else if (word == std::string("tint")) {
 		grabber->words.tint = val;
 		grabber->words.tint_updated = true;
 	}
 	else {
-		error("IOMANAGER", "Invalid serial word");
+		error(__FUNCTION__, "Invalid serial word");
 		return false;
 	}
 	success(word, "Wrote word");
+	return true;
+}
+
+bool IOManager::read_word(std::string word) {
+	static char wordbuf[32];
+	if (word == "wax" || word == "way" || word == "waxy") {
+		sprintf_s(wordbuf, 32, "(%s,%s)", grabber->words.wax, grabber->words.way);
+	}
+	else if (word == "tint") {
+		sprintf_s(wordbuf, 32, "(%s)", grabber->words.tint);
+	}
+	else {
+		sprintf_s(wordbuf, 32, "Unknown word %s", word.c_str());
+		error(__FUNCTION__, wordbuf);
+		return false;
+	}
+	success(__FUNCTION__, wordbuf);
 	return true;
 }
 
@@ -121,18 +160,18 @@ bool IOManager::new_app(std::string appname, std::string argstring) {
 	FramegrabberApp *newapp = NULL;
 	std::vector<std::string> args = split(argstring, std::string(","));
 
-	if (appname == "FOCUSER") {
+	if (appname == "focuser") {
 		newapp = new Focuser(grabber, args);
 	}
-	else if (appname == "FULLFRAME") {
+	else if (appname == "fullframe") {
 		newapp = new FullFrame(grabber, args);
 	}
-	else if (appname == "WINDOW") {
+	else if (appname == "window") {
 		newapp = new Window(grabber, args);
 	}
 	
 	if (newapp == NULL) {
-		error("IOMANAGER", "Unknown app");
+		error(__FUNCTION__, "Unknown app");
 		return false;
 	}
 	else {
@@ -153,32 +192,59 @@ void IOManager::kill_app(std::string appid_str) {
 	auto toremove = [appid](FramegrabberApp *other) { return other->id == appid; };
 	grabber->apps.remove_if(toremove);
 	success(appid_str, "If this app existed, it no longer does.");
-
-
 }
 
+void IOManager::log(const char * msg) {
+	fprintf(logfile, "%s %s;\n", timestr(), msg);
+}
+
+void IOManager::log(const char * type, const char * msg) {
+	fprintf(logfile, "%s %s(\"%s\");\n", timestr(), type, msg);
+}
+
+void IOManager::log(const char *type, const char *header, const char *msg) {
+	fprintf(logfile, "%s %s %s(\"%s\");\n", timestr(), type, header, msg);
+}
+
+char * IOManager::timestr()
+{
+	static char timebuf[128];
+	time_t curtime = time(NULL);
+	struct tm *tstruct = localtime(&curtime);
+	strftime(timebuf, 128, "%F %T", tstruct);
+	return timebuf;
+}
+
+static char msgbuf[1024];
+static char timebuf[128];
 void IOManager::info(std::string subject, std::string message) {
-	fprintf(output, "INFO %s(%s);\n", subject.c_str(), message.c_str());
+	log("INFO", subject.c_str(), message.c_str());
 }
 
-void IOManager::error(std::string subject, std::string message) {
-	fprintf(output, "ERROR %s(%s);\n", subject.c_str(), message.c_str());
+void IOManager::error(std::string subject, std::string message){ 
+	log("ERROR", subject.c_str(), message.c_str());
+	sprintf(msgbuf, "ERROR %s (%s);\n", subject.c_str(), message.c_str());
+	zmq_send(zmq_responder, msgbuf, strlen(msgbuf), 0);
 }
 
 void IOManager::success(std::string subject, std::string message) {
-	fprintf(output, "SUCCESS %s(%s);\n", subject.c_str(), message.c_str());
+	log("SUCCESS", subject.c_str(), message.c_str());
+	sprintf(msgbuf, "SUCCESS %s (%s);\n", subject.c_str(), message.c_str());
+	zmq_send(zmq_responder, msgbuf, strlen(msgbuf), 0);
 }
 
 void IOManager::fatal(std::string message) {
-	fprintf(output, "FATAL (%s);\n", message.c_str());
+	log("FATAL", message.c_str());
+	grabber->Disconnect();
+	fclose(logfile);
 	throw std::exception("Fatal exception");
 }
 
 void IOManager::ready() {
-	fprintf(output, "READY;\n");
+	log("READY");
 }
 
 void IOManager::done() {
-	fprintf(output, "DONE;\n");
+	log("DONE");
 }
 

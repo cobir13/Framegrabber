@@ -22,14 +22,23 @@ public:
 private:
 	FILE *input;
 	FILE *output;
+	FILE *logfile;
+	void *zmq_context;
+	void *zmq_responder;
 	Framegrabber *grabber;
 
 	std::regex full_command;
 	std::regex stub_command;
 
 	bool write_word(std::string word, std::string val);
+	bool read_word(std::string word);
 	bool new_app(std::string word, std::string argstring);
 	void kill_app(std::string appid);
+
+	void log(const char *msg);
+	void log(const char *type, const char *msg);
+	void log(const char *type, const char *header, const char *msg);
+	char *timestr();
 
 
 };

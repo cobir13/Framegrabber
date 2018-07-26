@@ -18,7 +18,7 @@ Framegrabber::~Framegrabber() {
 }
 
 PvDeviceInfo *Framegrabber::select_sole_device() {
-	iomanager->info("CONNECTION", "Looking for devices");
+	iomanager->info(__FUNCTION__, "Looking for devices");
 	PvSystem *sys = new PvSystem();
 	sys->Find();
 
@@ -38,19 +38,18 @@ PvDeviceInfo *Framegrabber::select_sole_device() {
 	}
 	char msgbuf[1024];
 	sprintf(msgbuf, "Found device %s", (PvDeviceInfo*)devices[0]->GetMACAddress().GetAscii());
-	iomanager->info("CONNECTION", msgbuf);
+	iomanager->info(__FUNCTION__, msgbuf);
 	return (PvDeviceInfo*)devices[0];
 }
 
 void Framegrabber::data_loop() {
-	printf("In dl\n");
 	PvBuffer *buffer = NULL;
 	PvResult opResult;
-	
+	static int i = 0;
 	PvResult result = stream.RetrieveBuffer(&buffer, &opResult, 1000);
 	if (result.IsOK() && opResult.IsOK()) {
+		printf("i=%d\n", i++);
 		if (buffer->GetPayloadType() == PvPayloadTypeImage) {
-			printf("Got img\n");
 			PvImage *img = buffer->GetImage();
 			width = img->GetWidth();
 			height = img->GetHeight();
@@ -64,7 +63,10 @@ void Framegrabber::data_loop() {
 		stream.QueueBuffer(buffer);
 	}
 	else {
-		printf("%s, %s\n", result.GetCodeString().GetAscii(), opResult.GetCodeString().GetAscii());
+		iomanager->error(__FUNCTION__, "Could not retrieve buffer");
+		char errstr[64];
+		sprintf_s(errstr, 64, "%s, %s", result.GetCodeString().GetAscii(), opResult.GetCodeString().GetAscii());
+		iomanager->error(__FUNCTION__, errstr);
 		throw std::runtime_error("Error retrieving buffer");
 	}
 }
@@ -78,8 +80,9 @@ bool Framegrabber::Connect() {
 	}
 
 	char msgbuf[1024];
-	sprintf(msgbuf, "Connecting to device %s", dev_info->GetMACAddress().GetAscii());
-	iomanager->info("CONNECTION", msgbuf);
+	sprintf(msgbuf, "Connecting to device %s at %s", dev_info->GetMACAddress().GetAscii(),
+		dev_info->GetIPAddress().GetAscii());
+	iomanager->info(__FUNCTION__, msgbuf);
 	if (device.Connect(dev_info).IsFailure()) {
 		sprintf(msgbuf, "Unable to connect to %s", dev_info->GetMACAddress().GetAscii());
 		iomanager->fatal(msgbuf);
@@ -87,7 +90,7 @@ bool Framegrabber::Connect() {
 	}
 	else {
 		sprintf(msgbuf, "Connected to %s", dev_info->GetMACAddress().GetAscii());
-		iomanager->success("CONNECTION", msgbuf);
+		iomanager->success(__FUNCTION__, msgbuf);
 	}
 
 	params = device.GetGenParameters();
@@ -98,7 +101,7 @@ bool Framegrabber::Connect() {
 
 	device.NegotiatePacketSize();
 
-	iomanager->info("STREAM", "Opening stream to device");
+	iomanager->info(__FUNCTION__, "Opening stream to device");
 	stream.Open(dev_info->GetIPAddress());
 
 	device.SetStreamDestination(stream.GetLocalIPAddress(), stream.GetLocalPort());
@@ -130,10 +133,12 @@ bool Framegrabber::Connect() {
 
 bool Framegrabber::Disconnect() {
 	stop->Execute();
+	iomanager->info(__FUNCTION__, "Transmission ended");
 	if (TLLocked != nullptr) {
 		TLLocked->SetValue(0);
 	}
 
+	iomanager->info(__FUNCTION__, "Aborting buffers");
 	stream.AbortQueuedBuffers();
 	while (stream.GetQueuedBufferCount() > 0) {
 		PvBuffer *buf = nullptr;
@@ -142,6 +147,9 @@ bool Framegrabber::Disconnect() {
 	}
 	delete[]buffers;
 	stream.Close();
+	iomanager->info(__FUNCTION__, "Stream closed");
 	device.Disconnect();
+	iomanager->info(__FUNCTION__, "Disconnected");
+	iomanager->done();
 	return true;
 }
