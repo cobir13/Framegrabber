@@ -10,6 +10,7 @@
 
 Framegrabber::Framegrabber() {
 	iomanager = new IOManager(this);
+	words = SerialWords(this);
 	width = 320;
 	height = 256;
 }
@@ -38,33 +39,46 @@ PvDeviceInfo *Framegrabber::select_sole_device() {
 		return NULL;
 	}
 	char msgbuf[1024];
-	sprintf(msgbuf, "Found device %s", (PvDeviceInfo*)devices[0]->GetMACAddress().GetAscii());
+	sprintf(msgbuf, "Found device %s", ((PvDeviceInfo*)devices[0])->GetMACAddress().GetAscii());
 	iomanager->info(__FUNCTION__, msgbuf);
 	return (PvDeviceInfo*)devices[0];
 }
 
-void Framegrabber::data_loop() {
+void Framegrabber::stream_info() {
 	PvStreamInfo info(&stream);
 	iomanager->info(__FUNCTION__, info.GetErrors().GetAscii());
 	iomanager->info(__FUNCTION__, info.GetWarnings(false).GetAscii());
 	iomanager->info(__FUNCTION__, info.GetStatistics(60).GetAscii());
 	iomanager->info(__FUNCTION__, std::to_string(stream.GetQueuedBufferCount()));
+}
+
+void Framegrabber::data_loop() {
+	words.write_words(&device);
+
 	PvBuffer *buffer = NULL;
 	PvResult opResult;
+
 	static int i = 0;
 	PvResult result = stream.RetrieveBuffer(&buffer, &opResult, 1000);
-	if (result.IsOK() && opResult.IsOK()) {
-		printf("i=%d\n", i++);
-		if (buffer->GetPayloadType() == PvPayloadTypeImage) {
-			PvImage *img = buffer->GetImage();
-			width = img->GetWidth();
-			height = img->GetHeight();
-			uint16_t *vdata = (uint16_t*)(img->GetDataPointer());
+	if (result.IsOK()) {
+		if (opResult.IsOK()) {
+			if (buffer->GetPayloadType() == PvPayloadTypeImage) {
+				PvImage *img = buffer->GetImage();
+				width = img->GetWidth();
+				height = img->GetHeight();
+				uint16_t *vdata = (uint16_t*)(img->GetDataPointer());
 
-			for (FramegrabberApp *app : apps) {
-				printf("setting data for %s\n", app->id);
-				app->set_frame(vdata);
+				for (FramegrabberApp *app : apps) {
+					app->set_frame(vdata);
+				}
 			}
+			else {
+				iomanager->warning(__FUNCTION__, "Buffer payload type not image.");
+			}
+		}
+		else {
+			iomanager->warning(__FUNCTION__, "opResult error. Stream info following.");
+			//stream_info();
 		}
 		stream.QueueBuffer(buffer);
 	}
@@ -145,8 +159,17 @@ bool Framegrabber::Connect() {
 	return true;
 }
 
+// NOFATAL: Because this function is called in fatal(),
+// it may not throw a fatal error.
 bool Framegrabber::Disconnect() {
-	stop->Execute();
+	if (stop) {
+		stop->Execute();
+	}
+	else {
+		iomanager->warning(__FUNCTION__, "stop is NULL. Exiting early.");
+		return false;
+	}
+	
 	iomanager->info(__FUNCTION__, "Transmission ended");
 	if (TLLocked != nullptr) {
 		TLLocked->SetValue(0);

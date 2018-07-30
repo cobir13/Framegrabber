@@ -7,8 +7,10 @@
 #include <SDL.h>
 #undef main
 
-#define DEFAULT_FPS (60)
+#define DEFAULT_FPS (30)
 #define DEFAULT_MSPF (1000/DEFAULT_FPS)
+#define TEXT_HEIGHT (20) //Height of info text in pixels
+#define IMG_SCALING (10)
 
 class Window : public FramegrabberApp {
 public:
@@ -22,6 +24,7 @@ public:
 
 private:
 	uint32_t ms_per_frame;
+	uint16_t *framebuf;
 	Framegrabber *framegrabber;
 	SDL_Window *window;
 	SDL_Surface *surface;
@@ -31,6 +34,7 @@ private:
 	bool should_update();
 	bool updated;
 	void init(Framegrabber *grabber);
+	uint32_t grey16_to_rgba32(uint16_t pix);
 };
 
 #endif // WINDOW_H

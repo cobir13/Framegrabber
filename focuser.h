@@ -19,6 +19,7 @@ public:
 	void update(){};
 
 private:
+	Framegrabber *grabber;
 	void init(Framegrabber *grabber, int numf, std::string dest_str, int savex, int savey);
 	int curframe;
 	int numframes;

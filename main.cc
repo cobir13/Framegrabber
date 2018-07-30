@@ -31,7 +31,6 @@ void FGloop(Framegrabber *grabber) {
         if (app->done) {
 			app->save();
 			delete app;
-
         }
     }
     grabber->apps.remove_if([](FramegrabberApp *app) { return app->done; });
@@ -42,8 +41,14 @@ void FGloop(Framegrabber *grabber) {
 
 int main(int argc, char **argv) {
     Framegrabber grabber;
-	grabber.Connect();
-	while (1) FGloop(&grabber);
-    grabber.Disconnect();
+	if (!grabber.Connect()) {
+		grabber.iomanager->fatal("Could not connect");
+	}
+	try {
+		while (1) FGloop(&grabber);
+		grabber.Disconnect();
+	}
+	catch (std::exception) {}
+    
 }
 #endif

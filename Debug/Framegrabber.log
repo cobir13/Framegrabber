@@ -1,5 +1,8 @@
 ﻿  iomanager.cc
-c:\users\keck project\documents\framegrabber\framegrabber\iomanager.cc(80): warning C4715: 'IOManager::RunCommand': not all control paths return a value
+c:\users\keck project\documents\framegrabber\framegrabber\iomanager.cc(185): warning C4101: 'oe': unreferenced local variable
+c:\users\keck project\documents\framegrabber\framegrabber\iomanager.cc(251): warning C4101: 'p': unreferenced local variable
+c:\users\keck project\documents\framegrabber\framegrabber\iomanager.cc(274): warning C4101: 'iarg': unreferenced local variable
+c:\users\keck project\documents\framegrabber\framegrabber\iomanager.cc(278): warning C4101: 'oor': unreferenced local variable
   Framegrabber.vcxproj -> C:\Users\Keck Project\Documents\Framegrabber\Debug\Framegrabber.exe
   Framegrabber.vcxproj -> C:\Users\Keck Project\Documents\Framegrabber\Debug\Framegrabber.pdb (Full PDB)
   0 File(s) copied

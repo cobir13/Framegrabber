@@ -2,6 +2,7 @@
 #define FRAMEGRABBER_H
 
 #include "framegrabber_app.h"
+#include "serialwords.h"
 #include <PvDevice.h>
 #include <PvGenParameterArray.h>
 #include <PvStream.h>
@@ -10,15 +11,8 @@
 #include <list>
 #include <regex>
 
-#define FOO
+//#define FOO
 
-typedef struct {
-	int wax;
-	int way;
-	int tint;
-	bool WAXY_updated;
-	bool tint_updated;
-} serial_words;
 
 
 class IOManager;
@@ -36,11 +30,7 @@ public:
 	
 	uint32_t width, height;
 	std::list<FramegrabberApp *> apps;
-	serial_words words;
-
-
-	
-	
+	SerialWords words;
 
 private:
 	PvDevice device;
@@ -54,6 +44,8 @@ private:
 	PvGenCommand *stop;
 
 	PvDeviceInfo *select_sole_device();
+
+	void stream_info();
 
 
 };

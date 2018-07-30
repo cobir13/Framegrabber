@@ -4,6 +4,7 @@
 #include <stdexcept>
 
 #define FGAPP_INIT uint16_t FramegrabberApp::cur_id = 0
+#define MAX_APPCOUNT (4096)
 
 
 class FramegrabberApp {

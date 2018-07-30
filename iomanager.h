@@ -4,6 +4,7 @@
 #include <regex>
 #include "framegrabber.h"
 
+class Framegrabber;
 
 class IOManager {
 public:
@@ -13,11 +14,14 @@ public:
 	bool ManageInput();
 
 	void info(std::string subject, std::string message);
+	void warning(std::string subject, std::string message);
 	void error(std::string subject, std::string message);
 	void success(std::string subject, std::string message);
 	void fatal(std::string message);
 	void ready();
 	void done();
+
+	std::string extract_fp(std::string);
 
 private:
 	FILE *input;
@@ -29,6 +33,7 @@ private:
 
 	std::regex full_command;
 	std::regex stub_command;
+	std::regex extract_fp_pattern;
 
 	bool write_word(std::string word, std::string val);
 	bool read_word(std::string word);

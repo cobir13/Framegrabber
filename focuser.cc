@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "exceptions.h"
 #include "TinyTIFF/tinytiffwriter.h"
+#include "iomanager.h"
 
 Focuser::Focuser(Framegrabber *grabber, int numf, std::string dest_str, int savex, int savey) {
 	init(grabber, numf, dest_str, savex, savey);
@@ -18,18 +19,24 @@ Focuser::Focuser(Framegrabber *grabber, std::vector<std::string> &argstring) {
 
 	try {
 		numf = stoi(argstring[0]);
-		dest = argstring[1];
+		dest = grabber->iomanager->extract_fp(argstring[1]);
 		savex = stoi(argstring[2]);
 		savey = stoi(argstring[3]);
 	}
 	catch (std::invalid_argument &iarg) {
 		throw bad_parameter_exception(iarg.what());
 	}
+	catch (std::out_of_range &oor) {
+		throw bad_parameter_exception(oor.what());
+	}
 
 	init(grabber, numf, dest, savex, savey);
 }
 
-void Focuser::init(Framegrabber *grabber, int numf, std::string dest_str, int savex, int savey) {
+//Generalized constructor
+void Focuser::init(Framegrabber *g, int numf, std::string dest_str, int savex, int savey) {
+	name = "Focuser";
+	grabber = g;
 	id = get_id();
 	numframes = numf;
 	curframe = 0;
@@ -47,6 +54,7 @@ Focuser::~Focuser() {
 	free(fbuf);
 }
 
+//Copy data from the stream buffer to the internal buffer
 bool Focuser::set_frame(uint16_t *data) {
 	if (!done) {
 		fbuf[curframe] = *(data + width*y + x);
@@ -59,17 +67,25 @@ bool Focuser::set_frame(uint16_t *data) {
 	return true;
 }
 
+// Write the internal buffer to a tif file
 bool Focuser::save() {
-	TinyTIFFFile *tif = TinyTIFFWriter_open(dest.c_str(), 16, width, height);
+	grabber->iomanager->info(name, "Saving");
+	TinyTIFFFile *tif = TinyTIFFWriter_open(dest.c_str(), 16, 1, 1);
 	if (tif) {
 		for (int frame = 0; frame < numframes; frame++) {
-			uint8_t *bufptr = (uint8_t*)fbuf + 2 * frame;
+			uint8_t *bufptr = (uint8_t*)fbuf + 2*frame;
 			TinyTIFFWriter_writeImage(tif, bufptr);
 		}
 		TinyTIFFWriter_close(tif);
 		return true;
+		grabber->iomanager->info(name, "Saved");
 	}
 	else {
+		char warnbuf[48];
+		sprintf_s(warnbuf, 48, "w=%d, h=%d, tif=%x, dest='%s'", width, height, tif, dest.c_str());
+		grabber->iomanager->warning(name, warnbuf);
+		grabber->iomanager->warning(name, "Save error!");
+		grabber->iomanager->fatal("Exiting on save failure");
 		return false;
 	}
 }

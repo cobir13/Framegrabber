@@ -28,17 +28,24 @@ FullFrame::FullFrame(Framegrabber *grabber, int numf, std::string dest_str) {
 
 FullFrame::FullFrame(Framegrabber *grabber, std::vector<std::string> &argstring) {
 	if (argstring.size() != 2) {
-		throw bad_parameter_exception("Focuser requires four arguments");
+		throw bad_parameter_exception("FullFrame requires two arguments");
 	}
 	int numf;
 	std::string dest;
 
 	try {
 		numf = stoi(argstring[0]);
-		dest = argstring[1];
+		dest = grabber->iomanager->extract_fp(argstring[1]);
 	}
 	catch (std::invalid_argument &iarg) {
 		throw bad_parameter_exception(iarg.what());
+	}
+	catch (std::overflow_error &oe) {
+		throw bad_parameter_exception(oe.what());
+	}
+
+	if (dest.empty()) {
+		throw bad_parameter_exception("Could not extract path");
 	}
 
 	init(grabber, numf, dest);
@@ -49,7 +56,6 @@ FullFrame::~FullFrame() {
 }
 
 bool FullFrame::set_frame(uint16_t *data) {
-	grabber->iomanager->info("FullFrame", "Setting frame");
 	if (!done) {
 		uint16_t *current_buf = fbuf + (width*height*curframe);
 		memcpy(current_buf, data, width*height * sizeof(uint16_t));
@@ -63,7 +69,7 @@ bool FullFrame::set_frame(uint16_t *data) {
 }
 
 bool FullFrame::save() {
-	grabber->iomanager->info("FullFrame", "Saving");
+	grabber->iomanager->info(name, "Saving");
 	TinyTIFFFile *tif = TinyTIFFWriter_open(dest.c_str(), 16, width, height);
 	if (tif) {
 		for (int frame = 0; frame < numframes; frame++) {
@@ -72,8 +78,14 @@ bool FullFrame::save() {
 		}
 		TinyTIFFWriter_close(tif);
 		return true;
+		grabber->iomanager->info(name, "Saved");
 	}
 	else {
+		char warnbuf[48];
+		sprintf_s(warnbuf, 48, "w=%d, h=%d, tif=%x, dest='%s'", width, height, tif, dest.c_str());
+		grabber->iomanager->warning(name, warnbuf);
+		grabber->iomanager->warning(name, "Save error!");
+		grabber->iomanager->fatal("Exiting on save failure");
 		return false;
 	}
 }

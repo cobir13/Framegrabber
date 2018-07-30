@@ -1,8 +1,9 @@
 #include "window.h"
 #include "iomanager.h"
 
-static inline uint32_t grey16_to_rgba32(uint16_t pix) {
-	uint8_t pix8 = pix / 256;
+ uint32_t Window::grey16_to_rgba32(uint16_t pix) {
+	// We need to convert from a 14 bit number (in a 16 bit shell) to an 8-bit value.
+	uint8_t pix8 = (uint8_t)(pix); // pix / (2^14/2^8)
 	uint8_t result[4];
 	result[0] = SDL_ALPHA_OPAQUE;
 	result[1] = pix8;
@@ -28,12 +29,14 @@ void Window::init(Framegrabber *grabber) {
 		throw std::runtime_error("Could not initialize SDL2");
 	}
 
+	framebuf = (uint16_t*)malloc(2 * grabber->width * grabber->height);
+
 	window = SDL_CreateWindow(
 		"Framegrabber Display",
 		SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED,
-		grabber->width * 2,
-		grabber->height * 2,
+		grabber->width * IMG_SCALING,
+		grabber->height * IMG_SCALING + TEXT_HEIGHT,
 		SDL_WINDOW_SHOWN);
 	if (!window) {
 
@@ -57,7 +60,7 @@ void Window::init(Framegrabber *grabber) {
 		grabber->height
 	);
 	if (!texture) {
-		grabber->iomanager->error("WINDOW", SDL_GetError());
+		grabber->iomanager->error(name, SDL_GetError());
 		throw std::runtime_error("Could not create SDL texture");
 	}
 }
@@ -77,19 +80,11 @@ bool Window::should_update() {
 }
 
 bool Window::set_frame(uint16_t *data) {
-	if (!should_update()) {
+	if (done || !should_update()) {
 		return true;
 	}
 
-
-	uint32_t *vidbuf;
-	int pitch;
-	SDL_LockTexture(texture, NULL, (void**)&vidbuf, &pitch);
-	for (uint32_t i = 0; i < (framegrabber->width * framegrabber->height); i++) {
-		vidbuf[i] = grey16_to_rgba32(data[i]);
-	}
-	SDL_UnlockTexture(texture);
-
+	memcpy(framebuf, data, 2 * framegrabber->width*framegrabber->height);
 	last_update = SDL_GetTicks();
 	updated = true;
 	return true;
@@ -97,6 +92,16 @@ bool Window::set_frame(uint16_t *data) {
 
 void Window::update() {
 	if (!updated) return;
+	updated = false;
+
+	uint32_t *vidbuf;
+	int pitch;
+	SDL_LockTexture(texture, NULL, (void**)&vidbuf, &pitch);
+	for (uint32_t i = 0; i < (framegrabber->width * framegrabber->height); i++) {
+		vidbuf[i] = grey16_to_rgba32(framebuf[i]);
+	}
+	SDL_UnlockTexture(texture);
+
 
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, texture, NULL, NULL);
@@ -104,6 +109,11 @@ void Window::update() {
 
 	SDL_Event e;
 	while (SDL_PollEvent(&e)) {
-		if (e.type == SDL_QUIT) { done = true; }
+		if (e.type == SDL_WINDOWEVENT) { 
+			switch (e.window.event) {
+			case SDL_WINDOWEVENT_CLOSE:
+				done = true;
+			}
+		}
 	}
 }

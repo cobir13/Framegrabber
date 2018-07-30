@@ -5,37 +5,66 @@
 #include <zmq.h>
 #include <errno.h>
 #include <time.h>
+#include <stdio.h>
 #include "exceptions.h"
 #include "focuser.h"
 #include "fullframe_framegrabber_app.h"
 #include "window.h"
 
+#define _DEBUG
 
-std::vector<std::string> split(const std::string& str, const std::string& delim) {
+static const char *helpmsg = "\n"\
+"Framegrabber help:\n"\
+"----------------------------\n"\
+"Commands are of the form:\n"\
+"<CMD> <subject>(<arg(s)>);\n"\
+"---or---\n"\
+"<CMD>;\n\n"\
+"Valid commands are:\n"\
+"STREAM <appname>(<args>);\n"\
+"\tStarts the named app\n"\
+"WORD <wordname>(<val>);\n"\
+"\tWrites the named serial word\n"\
+"GETWORD <wordname();\n"\
+"\tReturns the named serial word\n"\
+"KILLAPP <appname>();\n"\
+"\tKills the named app (no saving)\n"\
+"QUIT;\n"\
+"\tKills the server\n"\
+"HELP;\n"\
+"\tDisplays this message\n"\
+"----------------------------\n"\
+"See the manual for details\n";
+
+
+// Splits up a string into parts based on a character. Similar to python .split
+std::vector<std::string> split(const std::string& str, const char *delims) {
 	std::vector<std::string> parts;
-	size_t start, end = 0;
-	while (end < str.size()) {
-		start = end;
-		while (start < str.size() && (delim.find(str[start]) != std::string::npos)) {
-			start++;  // skip initial whitespace
-		}
-		end = start;
-		while (end < str.size() && (delim.find(str[end]) == std::string::npos)) {
-			end++; // skip to end of word
-		}
-		if (end - start != 0) {  // just ignore zero-length strings.
-			parts.push_back(std::string(str, start, end - start));
-		}
+	static char strbuf[1024];
+	strcpy_s(strbuf, 1024, str.c_str());
+	char *ptbuf;
+	ptbuf = strtok(strbuf, delims);
+	while (ptbuf != NULL) {
+		parts.push_back(ptbuf);
+		ptbuf = strtok(NULL, delims);
 	}
 	return parts;
 }
 
 
 IOManager::IOManager(Framegrabber *g) {
+	printf("Starting server\n");
+	printf(helpmsg);
+	printf("\nThis server cannot be interacted with via stdin.\n"\
+		"A ZeroMQ client is required.\n"\
+		"The fgterm.py program located in the root directory\n"\
+		"of this project provides a simple terminal.\n"\
+		"Please wait 5-10s for the stream to stabilize.\n");
 	grabber = g;
 	input = stdin;
 	output = stdout;
 	logfile = fopen("C:/Users/Keck Project/Documents/Framegrabber/framegrabber.log", "w");
+	
 
 	zmq_context = zmq_ctx_new();
 	zmq_responder = zmq_socket(zmq_context, ZMQ_REP);
@@ -43,8 +72,11 @@ IOManager::IOManager(Framegrabber *g) {
 		throw std::runtime_error("Could not bind ZeroMQ socket!");
 	}
 
+	printf("Server ready\n");
+
 	full_command = std::regex("\\s*(\\w*)\\s*(\\w*)\\s*\\(([^)]*)\\);\\s*");
 	stub_command = std::regex("\\s*(\\w*);\\s*");
+	extract_fp_pattern = std::regex("\\s*\"([^\"]*)\"\\s*");
 }
 
 
@@ -53,15 +85,19 @@ IOManager::~IOManager()
 }
 
 bool IOManager::RunCommand(std::string input) {
+	// Log the input string we're passed
 	info(__FUNCTION__, input);
+
+	//Try to match the input against the patterns we have
 	std::smatch matches;
+	//First, the full command pattern of <1> <2> (<3>);
 	if (std::regex_match(input, matches, full_command)) {
 		std::string base = matches[1].str();
 		std::string appname = matches[2].str();
 		std::string args = matches[3].str();
 
+		// Then send it out to the appropriate function to do the work
 		if (base == "STREAM") {
-			printf("Caught stream\n");
 			new_app(appname, args);
 		}
 		else if (base == "WORD") {
@@ -73,43 +109,72 @@ bool IOManager::RunCommand(std::string input) {
 		else if (base == "KILLAPP") {
 			kill_app(appname);
 		}
+		// Otherwise, return an error
 		else {
 			error(base, "Unknown procedure");
 		}
 	}
+	//Check if it matches the pattern <1>;
 	else if (std::regex_match(input, matches, stub_command)) {
 		std::string command = matches[1].str();
 		info(__FUNCTION__, command);
-		if (command == std::string("QUIT")) {
+		if (command == "HEARTBEAT") {
+			success("HEARTBEAT", "");
+		}
+		else if (command == std::string("QUIT")) {
 			info(__FUNCTION__, "Quitting");
-			return false;
+			fatal("Exiting upon request");
+		}
+		else if (command == "HELP") {
+			success("HELP", helpmsg);
+		} 
+		else if (command == "SYNC") {
+			fflush(logfile);
+			success("SYNC", "Updated log");
 		}
 		else {
 			error(command, "Unknown stub command");
 		}
 	}
+	// Otherwise, we dont know what to do and log an error
 	else {
 		error(__FUNCTION__, "Parse error");
 	}
+	return true;
 }
 
-static char combuf[1024];
-bool IOManager::ManageInput()
-{
+
+
+bool IOManager::ManageInput() {
+	//The buffer to store the input (static for the tiny tiny performance improvement)
+	static char combuf[1024];
+
+	//Handle input messages until there are none left
 	while (true) {
-		if (-1 == zmq_recv(zmq_responder, combuf, 1024, ZMQ_DONTWAIT)) {
+		//Reset errno in case someone else set it (led to a nasty crash a while back)
+		errno = 0;
+		// Receive a message, and put it in the buffer. Don't block if there is no message to receive.
+		int msglen = zmq_recv(zmq_responder, combuf, 1023, ZMQ_DONTWAIT);
+		//-1 is the error return
+		if (-1 == msglen) {
 			int e = errno;
+			// If the error is just EAGAIN, it meant there was no input.
+			// We just go ahead and continue in that case.
 			if (e == EAGAIN || e == 0) {
 				break;
 			}
+			// Otherwise, something's gone seriously wrong with the socket. Go ahead and quit
 			else {
-				printf("%s\n", strerror(e));
-				throw std::runtime_error("Error receiving from socket");
+				warning(std::to_string(e), strerror(e));
+				fatal("Socket recv error");
 			}
-			// reset for the next go round
-			errno = 0;
 		}
-		printf("%c\n", combuf[0]);
+		// Because we get in a raw (binary) string, we need to add the zero terminator ourselves
+		else {
+			combuf[msglen] = '\0';
+		}
+
+		//Try to run our new string as a command
 		if (!RunCommand(std::string(combuf))) {
 			return false;
 		}
@@ -117,20 +182,37 @@ bool IOManager::ManageInput()
 	return true;
 }
 
+// Update the serial_words structure, and flag it as updated
 bool IOManager::write_word(std::string word, std::string val_str) {
-	int val = std::stoi(val_str);
+	int val;
+	try {
+		val = std::stoi(val_str);
+	}
+	catch (std::overflow_error &oe) {
+		error(__FUNCTION__, "Overflow error");
+		return false;
+	}
 
 	if (word == std::string("wax")) {
-		grabber->words.wax = val;
-		grabber->words.WAXY_updated = true;
+		if (val >= 320 || val < 0) {
+			error(word, "OutOfRange: Wax must be 0 <= WAX < 320");
+			return false;
+		}
+		grabber->words.set_wax(val);
 	}
 	else if (word == std::string("way")) {
-		grabber->words.way = val;
-		grabber->words.WAXY_updated = true;
+		if (val >= 256 || val < 0) {
+			error(word, "OutOfRange: Way must be 0 <= WAY < 256");
+			return false;
+		}
+		grabber->words.set_way(val);
 	}
 	else if (word == std::string("tint")) {
-		grabber->words.tint = val;
-		grabber->words.tint_updated = true;
+		if (!grabber->words.valid_tint(val)) {
+			error(word, "Invalid tint. See manual for valid options");
+			return false;
+		}
+		grabber->words.set_tint(val);
 	}
 	else {
 		error(__FUNCTION__, "Invalid serial word");
@@ -143,10 +225,10 @@ bool IOManager::write_word(std::string word, std::string val_str) {
 bool IOManager::read_word(std::string word) {
 	static char wordbuf[32];
 	if (word == "wax" || word == "way" || word == "waxy") {
-		sprintf_s(wordbuf, 32, "(%s,%s)", grabber->words.wax, grabber->words.way);
+		sprintf_s(wordbuf, 32, "[%d,%d]", grabber->words.get_wax(), grabber->words.get_way());
 	}
 	else if (word == "tint") {
-		sprintf_s(wordbuf, 32, "(%s)", grabber->words.tint);
+		sprintf_s(wordbuf, 32, "%d", grabber->words.get_tint());
 	}
 	else {
 		sprintf_s(wordbuf, 32, "Unknown word %s", word.c_str());
@@ -159,17 +241,24 @@ bool IOManager::read_word(std::string word) {
 
 bool IOManager::new_app(std::string appname, std::string argstring) {
 	FramegrabberApp *newapp = NULL;
-	std::vector<std::string> args = split(argstring, std::string(","));
+	std::vector<std::string> args = split(argstring, ",");
 
-	if (appname == "focuser") {
-		newapp = new Focuser(grabber, args);
+	try {
+		if (appname == "focuser") {
+			newapp = new Focuser(grabber, args);
+		}
+		else if (appname == "fullframe") {
+			newapp = new FullFrame(grabber, args);
+		}
+		else if (appname == "window") {
+			newapp = new Window(grabber, args);
+		}
 	}
-	else if (appname == "fullframe") {
-		newapp = new FullFrame(grabber, args);
+	catch (bad_parameter_exception &p) {
+		error(__FUNCTION__, "Parameter error");
+		return false;
 	}
-	else if (appname == "window") {
-		newapp = new Window(grabber, args);
-	}
+
 	
 	if (newapp == NULL) {
 		error(__FUNCTION__, "Unknown app");
@@ -177,7 +266,7 @@ bool IOManager::new_app(std::string appname, std::string argstring) {
 	}
 	else {
 		grabber->apps.push_back(newapp);
-		success(newapp->getname(), std::to_string(newapp->id));
+		grabber->iomanager->success(newapp->getname(), std::to_string(newapp->id));
 		return true;
 	}
 }
@@ -186,9 +275,18 @@ void IOManager::kill_app(std::string appid_str) {
 	uint16_t appid;
 	try {
 		appid = std::stoi(appid_str);
+		if (appid > MAX_APPCOUNT) {
+			throw std::out_of_range("AppID out of range");
+		}
 	} catch (std::invalid_argument &iarg) {
-		throw bad_parameter_exception(iarg.what());
+		error(__FUNCTION__, "Bad AppID [Did you pass the name instead of the ID?]");
+		return;
 	}
+	catch (std::out_of_range &oor) {
+		error(__FUNCTION__, "AppID out of range");
+		return;
+	}
+
 
 	auto toremove = [appid](FramegrabberApp *other) { return other->id == appid; };
 	grabber->apps.remove_if(toremove);
@@ -197,14 +295,25 @@ void IOManager::kill_app(std::string appid_str) {
 
 void IOManager::log(const char * msg) {
 	fprintf(logfile, "%s %s;\n", timestr(), msg);
+#ifdef _DEBUG
+	fflush(logfile);
+#endif
 }
 
+// NOFATAL: Because this function is called in fatal(),
+// it may not throw a fatal error.
 void IOManager::log(const char * type, const char * msg) {
 	fprintf(logfile, "%s %s (\"%s\");\n", timestr(), type, msg);
+#ifdef _DEBUG
+	fflush(logfile);
+#endif
 }
 
 void IOManager::log(const char *type, const char *header, const char *msg) {
 	fprintf(logfile, "%s %s %s (\"%s\");\n", timestr(), type, header, msg);
+#ifdef _DEBUG
+	fflush(logfile);
+#endif
 }
 
 char * IOManager::timestr()
@@ -222,6 +331,10 @@ void IOManager::info(std::string subject, std::string message) {
 	log("INFO", subject.c_str(), message.c_str());
 }
 
+void IOManager::warning(std::string subject, std::string message) {
+	log("WARNING", subject.c_str(), message.c_str());
+}
+
 void IOManager::error(std::string subject, std::string message){ 
 	log("ERROR", subject.c_str(), message.c_str());
 	sprintf(msgbuf, "ERROR %s (%s);\n", subject.c_str(), message.c_str());
@@ -235,9 +348,18 @@ void IOManager::success(std::string subject, std::string message) {
 }
 
 void IOManager::fatal(std::string message) {
+	printf("FATAL ERROR. SEE LOG.\n");
 	log("FATAL", message.c_str());
-	grabber->Disconnect();
+	// We want to disconnect, but this may throw exceptions if we never connected
+	try {
+		grabber->Disconnect();
+	}
+	catch (std::exception) {}
+	// Priority is closing the log, so we get info
+	done();
 	fclose(logfile);
+
+	exit(-1);
 	throw std::exception("Fatal exception");
 }
 
@@ -245,7 +367,34 @@ void IOManager::ready() {
 	log("READY");
 }
 
+// NOFATAL: Because this function is called in fatal(),
+// it may not throw a fatal error.
 void IOManager::done() {
 	log("DONE");
+}
+
+std::string IOManager::extract_fp(std::string rawpath) {
+	// Try to extract the filepath from the quotation marks it comes wrapped in
+	std::smatch matches;
+	if (std::regex_match(rawpath, matches, extract_fp_pattern)) {
+		std::string fname = matches[1].str();
+		//Check if the file is valid by opening it for writing
+		FILE *testfile = fopen(fname.c_str(), "w");
+		// If it's openable, we're good. Close the file and return it
+		if (testfile) {
+			fclose(testfile);
+			return fname;
+		}
+		else {
+			// Throw a warning into the log
+			warning(__FUNCTION__, "Invalid filename");
+			return std::string();
+		}
+	}
+	// Throw a warning. This should only occur if the fpath isn't wrapped in quote marks
+	else {
+		warning(__FUNCTION__, "Could not parse FP");
+		return std::string();
+	}
 }
 
