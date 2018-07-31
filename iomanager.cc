@@ -11,7 +11,6 @@
 #include "fullframe_framegrabber_app.h"
 #include "window.h"
 
-#define _DEBUG
 
 static const char *helpmsg = "\n"\
 "Framegrabber help:\n"\
@@ -23,7 +22,7 @@ static const char *helpmsg = "\n"\
 "Valid commands are:\n"\
 "STREAM <appname>(<args>);\n"\
 "\tStarts the named app\n"\
-"WORD <wordname>(<val>);\n"\
+"SETWORD <wordname>(<val>);\n"\
 "\tWrites the named serial word\n"\
 "GETWORD <wordname();\n"\
 "\tReturns the named serial word\n"\
@@ -33,6 +32,8 @@ static const char *helpmsg = "\n"\
 "\tKills the server\n"\
 "HELP;\n"\
 "\tDisplays this message\n"\
+"SYNC;\n"\
+"\tForce-updates the log file\n"\
 "----------------------------\n"\
 "See the manual for details\n";
 
@@ -100,7 +101,7 @@ bool IOManager::RunCommand(std::string input) {
 		if (base == "STREAM") {
 			new_app(appname, args);
 		}
-		else if (base == "WORD") {
+		else if (base == "SETWORD") {
 			write_word(appname, args);
 		}
 		else if (base == "GETWORD") {
@@ -288,9 +289,22 @@ void IOManager::kill_app(std::string appid_str) {
 	}
 
 
-	auto toremove = [appid](FramegrabberApp *other) { return other->id == appid; };
-	grabber->apps.remove_if(toremove);
-	success(appid_str, "If this app existed, it no longer does.");
+	printf("%d\n", appid);
+	
+	auto app = grabber->apps.begin();
+	while (app != grabber->apps.end()) {
+		if ((*app)->id == appid) {
+			info("Killing", (*app)->getname());
+			delete *app;
+			grabber->apps.erase(app++);
+			success(std::to_string(appid), "Killed");
+			return;
+		}
+		else {
+			app++;
+		}
+	}
+	error(__FUNCTION__, "App not found");
 }
 
 void IOManager::log(const char * msg) {

@@ -25,15 +25,18 @@ void FGloop(Framegrabber *grabber) {
 		manager->fatal(e.what());
 	}
 
-    // Save and quit any apps that say they're done
-    for (FramegrabberApp *app: grabber->apps) {
-        app->update();
-        if (app->done) {
-			app->save();
-			delete app;
-        }
-    }
-    grabber->apps.remove_if([](FramegrabberApp *app) { return app->done; });
+	auto app = grabber->apps.begin();
+	while (app != grabber->apps.end()) {
+		(*app)->update();
+		if ((*app)->done) {
+			(*app)->save();
+			delete *app;
+			grabber->apps.erase(app++);
+		}
+		else {
+			app++;
+		}
+	}
 
 }
 

@@ -91,6 +91,17 @@ bool Window::set_frame(uint16_t *data) {
 }
 
 void Window::update() {
+	SDL_Event e;
+	while (SDL_PollEvent(&e)) {
+		if (e.type == SDL_WINDOWEVENT) {
+			switch (e.window.event) {
+			case SDL_WINDOWEVENT_CLOSE:
+				done = true;
+			}
+		}
+	}
+
+	// If there's no new data, there's no need to handle the screen update
 	if (!updated) return;
 	updated = false;
 
@@ -105,15 +116,9 @@ void Window::update() {
 
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, texture, NULL, NULL);
-	SDL_RenderPresent(renderer);
+	SDL_RenderPresent(renderer);	
+}
 
-	SDL_Event e;
-	while (SDL_PollEvent(&e)) {
-		if (e.type == SDL_WINDOWEVENT) { 
-			switch (e.window.event) {
-			case SDL_WINDOWEVENT_CLOSE:
-				done = true;
-			}
-		}
-	}
+bool Window::save() {
+	return true;
 }

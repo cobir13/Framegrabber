@@ -9,6 +9,8 @@
 
 class FramegrabberApp {
 public:
+	virtual ~FramegrabberApp() {};
+
 	bool done;
 	virtual bool set_frame(uint16_t *data) = 0;
 	virtual bool save() = 0;

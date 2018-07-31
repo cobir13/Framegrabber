@@ -9,7 +9,7 @@
 
 #define DEFAULT_FPS (30)
 #define DEFAULT_MSPF (1000/DEFAULT_FPS)
-#define TEXT_HEIGHT (20) //Height of info text in pixels
+#define TEXT_HEIGHT (0) //Height of info text in pixels
 #define IMG_SCALING (10)
 
 class Window : public FramegrabberApp {
@@ -19,7 +19,7 @@ public:
 	~Window();
 
 	bool set_frame(uint16_t *data);
-	bool save() { return true; }
+	bool save();
 	void update();
 
 private:
