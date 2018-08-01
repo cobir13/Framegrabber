@@ -82,7 +82,7 @@ bool Focuser::save() {
 	}
 	else {
 		char warnbuf[48];
-		sprintf_s(warnbuf, 48, "w=%d, h=%d, tif=%x, dest='%s'", width, height, tif, dest.c_str());
+		sprintf_s(warnbuf, 48, "w=%d, h=%d, tif=%p, dest='%s'", width, height, (void*)tif, dest.c_str());
 		grabber->iomanager->warning(name, warnbuf);
 		grabber->iomanager->warning(name, "Save error!");
 		grabber->iomanager->fatal("Exiting on save failure");

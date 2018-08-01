@@ -10,6 +10,7 @@
 #include "focuser.h"
 #include "fullframe_framegrabber_app.h"
 #include "window.h"
+#include "query.h"
 
 
 static const char *helpmsg = "\n"\
@@ -54,22 +55,26 @@ std::vector<std::string> split(const std::string& str, const char *delims) {
 
 
 IOManager::IOManager(Framegrabber *g) {
-	printf("Starting server\n");
+	grabber = g;
+	input = stdin;
+	output = stdout;
+	logfile = fopen(grabber->config.communications.logfile.c_str(), "w");
+	printf("Log output will be directed to %s\n", grabber->config.communications.logfile.c_str());
+	
+	printf("Starting server...\n");
 	printf(helpmsg);
 	printf("\nThis server cannot be interacted with via stdin.\n"\
 		"A ZeroMQ client is required.\n"\
 		"The fgterm.py program located in the root directory\n"\
 		"of this project provides a simple terminal.\n"\
 		"Please wait 5-10s for the stream to stabilize.\n");
-	grabber = g;
-	input = stdin;
-	output = stdout;
-	logfile = fopen("C:/Users/Keck Project/Documents/Framegrabber/framegrabber.log", "w");
-	
 
 	zmq_context = zmq_ctx_new();
 	zmq_responder = zmq_socket(zmq_context, ZMQ_REP);
-	if (zmq_bind(zmq_responder, "tcp://*:5555")) {
+	char connectbuf[32];
+	snprintf(connectbuf, 32, "tcp://%s:%d", grabber->config.communications.ip_addr.c_str(),
+		grabber->config.communications.port);
+	if (zmq_bind(zmq_responder, connectbuf)) {
 		throw std::runtime_error("Could not bind ZeroMQ socket!");
 	}
 
@@ -189,7 +194,7 @@ bool IOManager::write_word(std::string word, std::string val_str) {
 	try {
 		val = std::stoi(val_str);
 	}
-	catch (std::overflow_error &oe) {
+	catch (std::overflow_error) {
 		error(__FUNCTION__, "Overflow error");
 		return false;
 	}
@@ -241,6 +246,11 @@ bool IOManager::read_word(std::string word) {
 }
 
 bool IOManager::new_app(std::string appname, std::string argstring) {
+	if (grabber->apps.size() > (uint32_t)grabber->config.fg_config.maxapps) {
+		error(__FUNCTION__, "Could not add app. config.configuration.max_apps may need to be increased.");
+		return false;
+	}
+
 	FramegrabberApp *newapp = NULL;
 	std::vector<std::string> args = split(argstring, ",");
 
@@ -254,8 +264,11 @@ bool IOManager::new_app(std::string appname, std::string argstring) {
 		else if (appname == "window") {
 			newapp = new Window(grabber, args);
 		}
+		else if (appname == "query") {
+			newapp = new PixelQuery(grabber, args);
+		}
 	}
-	catch (bad_parameter_exception &p) {
+	catch (bad_parameter_exception) {
 		error(__FUNCTION__, "Parameter error");
 		return false;
 	}
@@ -265,25 +278,27 @@ bool IOManager::new_app(std::string appname, std::string argstring) {
 		error(__FUNCTION__, "Unknown app");
 		return false;
 	}
-	else {
-		grabber->apps.push_back(newapp);
+	
+	grabber->apps.push_back(newapp);
+	if (newapp->reportsuccess) {
 		grabber->iomanager->success(newapp->getname(), std::to_string(newapp->id));
-		return true;
 	}
+	return true;
+	
 }
 
 void IOManager::kill_app(std::string appid_str) {
 	uint16_t appid;
 	try {
 		appid = std::stoi(appid_str);
-		if (appid > MAX_APPCOUNT) {
+		if (appid > grabber->config.fg_config.maxapps) {
 			throw std::out_of_range("AppID out of range");
 		}
-	} catch (std::invalid_argument &iarg) {
+	} catch (std::invalid_argument) {
 		error(__FUNCTION__, "Bad AppID [Did you pass the name instead of the ID?]");
 		return;
 	}
-	catch (std::out_of_range &oor) {
+	catch (std::out_of_range) {
 		error(__FUNCTION__, "AppID out of range");
 		return;
 	}

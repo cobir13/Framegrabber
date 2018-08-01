@@ -13,7 +13,24 @@
 
 //#define FOO
 
-
+typedef struct {
+	struct {
+		std::string ip_addr;
+		int port;
+		std::string logfile;
+	} communications;
+	struct {
+		int img_h;
+		int img_w;
+		int maxapps;
+		int bufcount;
+	} fg_config;
+	struct {
+		int fps;
+		int scaling;
+		int text_height;
+	} window;
+} FramegrabberConfig;
 
 class IOManager;
 
@@ -31,6 +48,7 @@ public:
 	uint32_t width, height;
 	std::list<FramegrabberApp *> apps;
 	SerialWords words;
+	FramegrabberConfig config;
 
 private:
 	PvDevice device;
@@ -47,7 +65,7 @@ private:
 
 	void stream_info();
 
-
+	void load_config(const char *configfile);
 };
 
 #endif //FRAMEGRABBER_H

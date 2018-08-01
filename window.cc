@@ -21,8 +21,9 @@ void Window::init(Framegrabber *grabber) {
 	id = get_id();
 	framegrabber = grabber;
 	done = false;
+	auto &windowconfig = grabber->config.window;
 	
-	ms_per_frame = DEFAULT_MSPF;
+	ms_per_frame = 1000/windowconfig.fps;
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 
@@ -31,12 +32,15 @@ void Window::init(Framegrabber *grabber) {
 
 	framebuf = (uint16_t*)malloc(2 * grabber->width * grabber->height);
 
+	img_w = grabber->width * windowconfig.scaling;
+	img_h = grabber->height * windowconfig.scaling;
+
 	window = SDL_CreateWindow(
 		"Framegrabber Display",
 		SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED,
-		grabber->width * IMG_SCALING,
-		grabber->height * IMG_SCALING + TEXT_HEIGHT,
+		img_w,
+		img_h + windowconfig.text_height,
 		SDL_WINDOW_SHOWN);
 	if (!window) {
 
@@ -63,6 +67,9 @@ void Window::init(Framegrabber *grabber) {
 		grabber->iomanager->error(name, SDL_GetError());
 		throw std::runtime_error("Could not create SDL texture");
 	}
+
+	img_viewport = { 0,0,img_w, img_h };
+	text_viewport = { 0, img_h, img_w, windowconfig.text_height };
 }
 
 
@@ -115,7 +122,7 @@ void Window::update() {
 
 
 	SDL_RenderClear(renderer);
-	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	SDL_RenderCopy(renderer, texture, NULL, &img_viewport);
 	SDL_RenderPresent(renderer);	
 }
 

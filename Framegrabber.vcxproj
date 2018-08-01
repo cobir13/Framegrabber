@@ -167,6 +167,7 @@
     <ClCompile Include="fullframe_framegrabber_app.cc" />
     <ClCompile Include="iomanager.cc" />
     <ClCompile Include="main.cc" />
+    <ClCompile Include="query.cc" />
     <ClCompile Include="serialwords.cc" />
     <ClCompile Include="TinyTIFF\tinytiffwriter.cpp" />
     <ClCompile Include="window.cc" />
@@ -178,6 +179,7 @@
     <ClInclude Include="framegrabber_app.h" />
     <ClInclude Include="fullframe_framegrabber_app.h" />
     <ClInclude Include="iomanager.h" />
+    <ClInclude Include="query.h" />
     <ClInclude Include="serialwords.h" />
     <ClInclude Include="TinyTIFF\tinytiffwriter.h" />
     <ClInclude Include="window.h" />
