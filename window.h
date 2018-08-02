@@ -2,15 +2,13 @@
 #define WINDOW_H
 #include "framegrabber_app.h"
 #include "framegrabber.h"
+#include "SDL_FontCache.h"
 #include <stdint.h>
 #include <vector>
 #include <SDL.h>
 #undef main
 
-#define DEFAULT_FPS (30)
-#define DEFAULT_MSPF (1000/DEFAULT_FPS)
-#define TEXT_HEIGHT (0) //Height of info text in pixels
-#define IMG_SCALING (10)
+
 
 class Window : public FramegrabberApp {
 public:
@@ -35,6 +33,14 @@ private:
 	bool updated;
 	void init(Framegrabber *grabber);
 	uint32_t grey16_to_rgba32(uint16_t pix);
+
+	int img_h, img_w;
+	SDL_Rect img_viewport;
+	SDL_Rect text_viewport;
+
+	FC_Font *font;
+
+	int mouse_x, mouse_y;
 };
 
 #endif // WINDOW_H

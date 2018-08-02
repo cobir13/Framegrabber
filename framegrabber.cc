@@ -5,14 +5,18 @@
 #include <stdexcept>
 #include <stdio.h>
 #include "iomanager.h"
+#include "../cpptoml/include/cpptoml.h"
 
-#define BUFFER_COUNT (120)
 
 Framegrabber::Framegrabber() {
+	printf("Loading configuration...\n");
+	load_config("../framegrabber.cfg");
 	iomanager = new IOManager(this);
 	words = SerialWords(this);
-	width = 320;
-	height = 256;
+	auto &fgconfig = config.fg_config;
+
+	width = fgconfig.img_w;
+	height = fgconfig.img_h;
 }
 
 Framegrabber::~Framegrabber() {
@@ -48,8 +52,36 @@ void Framegrabber::stream_info() {
 	PvStreamInfo info(&stream);
 	iomanager->info(__FUNCTION__, info.GetErrors().GetAscii());
 	iomanager->info(__FUNCTION__, info.GetWarnings(false).GetAscii());
-	iomanager->info(__FUNCTION__, info.GetStatistics(60).GetAscii());
+	iomanager->info(__FUNCTION__, info.GetStatistics(config.window.fps).GetAscii());
 	iomanager->info(__FUNCTION__, std::to_string(stream.GetQueuedBufferCount()));
+}
+
+void Framegrabber::load_config(const char *configfile)
+{
+	std::vector<std::string> defaults_used;
+	std::shared_ptr<cpptoml::table> config_table;
+	try {
+		config_table = cpptoml::parse_file(configfile);
+	}
+	catch (cpptoml::parse_exception &e) {
+		FILE *crash = fopen("crash.txt", "w");
+		fprintf(crash, "Error parsing config: %s\n", e.what());
+		fclose(crash);
+		throw std::runtime_error("Error loading configuration");
+	}
+	
+	config.communications.ip_addr = config_table->get_qualified_as<std::string>("communications.ip").value_or("*");
+	config.communications.port = config_table->get_qualified_as<int>("communications.port").value_or(5555);
+	config.communications.logfile = config_table->get_qualified_as<std::string>("communications.logfile").value_or("fg.log");
+
+	config.fg_config.img_h = config_table->get_qualified_as<int>("configuration.img_height").value_or(16);
+	config.fg_config.img_w = config_table->get_qualified_as<int>("configuration.img_width").value_or(64);
+	config.fg_config.maxapps = config_table->get_qualified_as<int>("configuration.max_apps").value_or(512);
+	config.fg_config.bufcount = config_table->get_qualified_as<int>("configuration.buffer_count").value_or(64);
+
+	config.window.fps = config_table->get_qualified_as<int>("window.fps").value_or(50);
+	config.window.scaling = config_table->get_qualified_as<int>("window.scaling").value_or(10);
+	config.window.text_height = config_table->get_qualified_as<int>("window.text_height").value_or(20);
 }
 
 void Framegrabber::data_loop() {
@@ -96,6 +128,13 @@ void Framegrabber::data_loop() {
 	}
 }
 
+std::pair<int, int> Framegrabber::small_to_large(int x, int y)
+{
+	int wax = words.get_wax();
+	int way = words.get_way();
+	return std::pair<int, int>(x + (wax/4)*8, y + way*2 + 1);
+}
+
 bool Framegrabber::Connect() {
 	PvDeviceInfo *dev_info = select_sole_device();
 
@@ -134,9 +173,10 @@ bool Framegrabber::Connect() {
 	PvInt64 size = 0;
 	payload_size->GetValue(size);
 
-	uint32_t buffer_count = (stream.GetQueuedBufferMaximum() < BUFFER_COUNT) ?
+	auto &cfg_bufcount = config.fg_config.bufcount;
+	uint32_t buffer_count = (stream.GetQueuedBufferMaximum() < (uint32_t)cfg_bufcount) ?
 		stream.GetQueuedBufferMaximum() :
-		BUFFER_COUNT;
+		cfg_bufcount;
 	
 	buffers = new PvBuffer[buffer_count];
 	for (uint32_t i = 0; i < buffer_count; i++) {
@@ -151,8 +191,13 @@ bool Framegrabber::Connect() {
 		TLLocked->SetValue(1);
 	}
 
-	dynamic_cast<PvGenCommand *>(params->Get("GevTimestampControlReset"))->Execute();
-	start->Execute();
+	try {
+		dynamic_cast<PvGenCommand *>(params->Get("GevTimestampControlReset"))->Execute();
+		start->Execute();
+	}
+	catch (std::runtime_error) {
+		iomanager->fatal("Could not start stream. Check that power to the camera head is turned on");
+	}
 
 	iomanager->ready();
 
@@ -187,20 +232,5 @@ bool Framegrabber::Disconnect() {
 	iomanager->info(__FUNCTION__, "Stream closed");
 	device.Disconnect();
 	iomanager->info(__FUNCTION__, "Disconnected");
-	iomanager->done();
 	return true;
 }
-
-#ifdef FOO
-int main(int argc, char **argv) {
-	Framegrabber f;
-	f.Connect();
-	for (unsigned i = 0; 1; i++) {
-		printf("%d\n", i);
-		try { f.data_loop(); }
-		catch (std::runtime_error &e) { f.iomanager->fatal("it ded rip"); }
-	}
-	f.Disconnect();
-	printf("success\n");
-}
-#endif

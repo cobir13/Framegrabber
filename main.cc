@@ -40,7 +40,6 @@ void FGloop(Framegrabber *grabber) {
 
 }
 
-#ifndef FOO
 
 int main(int argc, char **argv) {
     Framegrabber grabber;
@@ -54,4 +53,3 @@ int main(int argc, char **argv) {
 	catch (std::exception) {}
     
 }
-#endif
