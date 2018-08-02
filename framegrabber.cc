@@ -128,6 +128,13 @@ void Framegrabber::data_loop() {
 	}
 }
 
+std::pair<int, int> Framegrabber::small_to_large(int x, int y)
+{
+	int wax = words.get_wax();
+	int way = words.get_way();
+	return std::pair<int, int>(x + (wax/4)*8, y + way*2 + 1);
+}
+
 bool Framegrabber::Connect() {
 	PvDeviceInfo *dev_info = select_sole_device();
 

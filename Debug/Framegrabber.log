@@ -1,4 +1,7 @@
-﻿  iomanager.cc
-  Framegrabber.vcxproj -> C:\Users\Keck Project\Documents\Framegrabber\Debug\Framegrabber.exe
-  Framegrabber.vcxproj -> C:\Users\Keck Project\Documents\Framegrabber\Debug\Framegrabber.pdb (Full PDB)
-  0 File(s) copied
+﻿  window.cc
+  Generating Code...
+  Compiling...
+  main.cc
+  iomanager.cc
+  Generating Code...
+LINK : fatal error LNK1000: unknown error at 00F9D0D4; consult documentation for technical support options

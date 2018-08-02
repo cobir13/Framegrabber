@@ -50,6 +50,8 @@ public:
 	SerialWords words;
 	FramegrabberConfig config;
 
+	std::pair<int, int> small_to_large(int x, int y);
+
 private:
 	PvDevice device;
 	PvBuffer *buffers;

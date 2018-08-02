@@ -2,6 +2,7 @@
 #define WINDOW_H
 #include "framegrabber_app.h"
 #include "framegrabber.h"
+#include "SDL_FontCache.h"
 #include <stdint.h>
 #include <vector>
 #include <SDL.h>
@@ -36,6 +37,10 @@ private:
 	int img_h, img_w;
 	SDL_Rect img_viewport;
 	SDL_Rect text_viewport;
+
+	FC_Font *font;
+
+	int mouse_x, mouse_y;
 };
 
 #endif // WINDOW_H

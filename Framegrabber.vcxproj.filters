@@ -42,6 +42,9 @@
     <ClCompile Include="query.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SDL_FontCache.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framegrabber.h">
@@ -72,6 +75,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="query.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SDL_FontCache.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,5 +1,8 @@
 #include "window.h"
 #include "iomanager.h"
+#include "exceptions.h"
+#include <utility>
+
 
  uint32_t Window::grey16_to_rgba32(uint16_t pix) {
 	// We need to convert from a 14 bit number (in a 16 bit shell) to an 8-bit value.
@@ -22,6 +25,9 @@ void Window::init(Framegrabber *grabber) {
 	framegrabber = grabber;
 	done = false;
 	auto &windowconfig = grabber->config.window;
+
+	font = FC_CreateFont();
+	
 	
 	ms_per_frame = 1000/windowconfig.fps;
 
@@ -29,6 +35,8 @@ void Window::init(Framegrabber *grabber) {
 
 		throw std::runtime_error("Could not initialize SDL2");
 	}
+
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
 
 	framebuf = (uint16_t*)malloc(2 * grabber->width * grabber->height);
 
@@ -52,9 +60,15 @@ void Window::init(Framegrabber *grabber) {
 
 		throw std::runtime_error("Could not create SDL renderer");
 	}
+
+	if (!FC_LoadFont(font, renderer, "C:/Users/Keck Project/Documents/Framegrabber/Release/times.ttf",
+		windowconfig.text_height-4, FC_MakeColor(0, 0, 0, 255), TTF_STYLE_NORMAL)) {
+		throw bad_parameter_exception("Could not load font");
+	}
+
 	
 	//Set background color to black
-	SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
+	SDL_SetRenderDrawColor(renderer, 0xCF, 0xCF, 0xCF, SDL_ALPHA_OPAQUE);
 
 	texture = SDL_CreateTexture(
 		renderer,
@@ -98,13 +112,22 @@ bool Window::set_frame(uint16_t *data) {
 }
 
 void Window::update() {
+	int &scaling = framegrabber->config.window.scaling;
 	SDL_Event e;
 	while (SDL_PollEvent(&e)) {
-		if (e.type == SDL_WINDOWEVENT) {
+		switch (e.type) {
+		case SDL_WINDOWEVENT:
 			switch (e.window.event) {
 			case SDL_WINDOWEVENT_CLOSE:
 				done = true;
+				break;
 			}
+			break;
+
+		case SDL_MOUSEMOTION:
+			mouse_x = e.motion.x/scaling;
+			mouse_y = e.motion.y/scaling;
+			break;
 		}
 	}
 
@@ -120,9 +143,17 @@ void Window::update() {
 	}
 	SDL_UnlockTexture(texture);
 
+	
 
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, texture, NULL, &img_viewport);
+	if (mouse_y < (int)framegrabber->height) {
+		uint16_t mouseval = framebuf[framegrabber->width*mouse_y + mouse_x];
+		auto lcoords = framegrabber->small_to_large(mouse_x, mouse_y);
+		FC_DrawBox(font, renderer, text_viewport,
+			" | X=%d Y=%d | x=%d y=%d | (%d) | ",
+			lcoords.first, lcoords.second, mouse_x, mouse_y, mouseval);
+	}
 	SDL_RenderPresent(renderer);	
 }
 
