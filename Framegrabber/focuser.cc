@@ -9,7 +9,6 @@ Focuser::Focuser(Framegrabber *grabber, int numf, std::string dest_str, int save
 }
 
 //If your path has more than 2048 chars, you need to rethink your filing system
-static char fname_buf[2048];
 Focuser::Focuser(Framegrabber *grabber, std::vector<std::string> &argstring) {
 	if (argstring.size() != 4) {
 		throw bad_parameter_exception("Focuser requires four arguments");
@@ -77,12 +76,12 @@ bool Focuser::save() {
 			TinyTIFFWriter_writeImage(tif, bufptr);
 		}
 		TinyTIFFWriter_close(tif);
-		return true;
 		grabber->iomanager->info(name, "Saved");
+    return true;
 	}
 	else {
 		char warnbuf[48];
-		sprintf_s(warnbuf, 48, "w=%d, h=%d, tif=%p, dest='%s'", width, height, (void*)tif, dest.c_str());
+		snprintf(warnbuf, 48, "w=%d, h=%d, tif=%p, dest='%s'", width, height, (void*)tif, dest.c_str());
 		grabber->iomanager->warning(name, warnbuf);
 		grabber->iomanager->warning(name, "Save error!");
 		grabber->iomanager->fatal("Exiting on save failure");

@@ -3,15 +3,11 @@
 
 #include "framegrabber_app.h"
 #include "serialwords.h"
-#include <PvDevice.h>
-#include <PvGenParameterArray.h>
-#include <PvStream.h>
-#include <PvBuffer.h>
-#include <PvResult.h>
+#include "ebus.h"
 #include <list>
 #include <regex>
 
-//#define FOO
+
 
 typedef struct {
 	struct {
@@ -53,9 +49,9 @@ public:
 	std::pair<int, int> small_to_large(int x, int y);
 
 private:
-	PvDevice device;
+	PvDeviceGEV device;
 	PvBuffer *buffers;
-	PvStream stream;
+	PvStreamGEV stream;
 	
 	PvGenParameterArray *params;
 	PvGenInteger *TLLocked;
@@ -63,7 +59,7 @@ private:
 	PvGenCommand *start;
 	PvGenCommand *stop;
 
-	PvDeviceInfo *select_sole_device();
+	PvDeviceInfoGEV *select_sole_device();
 
 	void stream_info();
 

@@ -43,7 +43,7 @@ static const char *helpmsg = "\n"\
 std::vector<std::string> split(const std::string& str, const char *delims) {
 	std::vector<std::string> parts;
 	static char strbuf[1024];
-	strcpy_s(strbuf, 1024, str.c_str());
+	strncpy(strbuf, str.c_str(), 1024);
 	char *ptbuf;
 	ptbuf = strtok(strbuf, delims);
 	while (ptbuf != NULL) {
@@ -62,7 +62,7 @@ IOManager::IOManager(Framegrabber *g) {
 	printf("Log output will be directed to %s\n", grabber->config.communications.logfile.c_str());
 	
 	printf("Starting server...\n");
-	printf(helpmsg);
+	printf("%s", helpmsg);
 	printf("\nThis server cannot be interacted with via stdin.\n"\
 		"A ZeroMQ client is required.\n"\
 		"The fgterm.py program located in the root directory\n"\
@@ -231,13 +231,13 @@ bool IOManager::write_word(std::string word, std::string val_str) {
 bool IOManager::read_word(std::string word) {
 	static char wordbuf[32];
 	if (word == "wax" || word == "way" || word == "waxy") {
-		sprintf_s(wordbuf, 32, "[%d,%d]", grabber->words.get_wax(), grabber->words.get_way());
+		snprintf(wordbuf, 32, "[%d,%d]", grabber->words.get_wax(), grabber->words.get_way());
 	}
 	else if (word == "tint") {
-		sprintf_s(wordbuf, 32, "%d", grabber->words.get_tint());
+		snprintf(wordbuf, 32, "%d", grabber->words.get_tint());
 	}
 	else {
-		sprintf_s(wordbuf, 32, "Unknown word %s", word.c_str());
+		snprintf(wordbuf, 32, "Unknown word %s", word.c_str());
 		error(__FUNCTION__, wordbuf);
 		return false;
 	}
@@ -355,7 +355,6 @@ char * IOManager::timestr()
 }
 
 static char msgbuf[1024];
-static char timebuf[128];
 void IOManager::info(std::string subject, std::string message) {
 	log("INFO", subject.c_str(), message.c_str());
 }
@@ -389,7 +388,6 @@ void IOManager::fatal(std::string message) {
 	fclose(logfile);
 
 	exit(-1);
-	throw std::exception("Fatal exception");
 }
 
 void IOManager::ready() {
