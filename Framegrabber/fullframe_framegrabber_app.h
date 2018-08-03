@@ -26,7 +26,7 @@ private:
 	uint16_t *fbuf;
 	uint32_t width, height;
 
-	void FullFrame::init(Framegrabber *grabber, int numframes, std::string dest);
+  void init(Framegrabber *grabber, int numframes, std::string dest);
 };
 
 

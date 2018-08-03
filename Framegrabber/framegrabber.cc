@@ -1,11 +1,9 @@
 #include "framegrabber.h"
-#include <PvSystem.h>
-#include <PvStreamInfo.h>
 #include <vector>
 #include <stdexcept>
 #include <stdio.h>
 #include "iomanager.h"
-#include "../cpptoml/include/cpptoml.h"
+#include "cpptoml.h"
 
 
 Framegrabber::Framegrabber() {
@@ -23,19 +21,19 @@ Framegrabber::~Framegrabber() {
 	delete iomanager;
 }
 
-PvDeviceInfo *Framegrabber::select_sole_device() {
+PvDeviceInfoGEV *Framegrabber::select_sole_device() {
 	iomanager->info(__FUNCTION__, "Looking for devices");
 	PvSystem *sys = new PvSystem();
 	sys->Find();
 
-	std::vector<const PvDeviceInfo*> devices;
+	std::vector<const PvDeviceInfoGEV*> devices;
 	auto interfacecount = sys->GetInterfaceCount();
 	for (unsigned i = 0; i < interfacecount; i++) {
 		auto iface = sys->GetInterface(i);
 		auto devcount = iface->GetDeviceCount();
 		for (unsigned j = 0; j < devcount; j++) {
 			auto device = iface->GetDeviceInfo(j);
-			devices.push_back(device);
+			devices.push_back(dynamic_cast<const PvDeviceInfoGEV*>(device));
 		}
 	}
 	if (devices.size() != 1) {
@@ -43,9 +41,9 @@ PvDeviceInfo *Framegrabber::select_sole_device() {
 		return NULL;
 	}
 	char msgbuf[1024];
-	sprintf(msgbuf, "Found device %s", ((PvDeviceInfo*)devices[0])->GetMACAddress().GetAscii());
+	sprintf(msgbuf, "Found device %s", ((PvDeviceInfoGEV*)devices[0])->GetMACAddress().GetAscii());
 	iomanager->info(__FUNCTION__, msgbuf);
-	return (PvDeviceInfo*)devices[0];
+	return (PvDeviceInfoGEV*)devices[0];
 }
 
 void Framegrabber::stream_info() {
@@ -90,7 +88,6 @@ void Framegrabber::data_loop() {
 	PvBuffer *buffer = NULL;
 	PvResult opResult;
 
-	static int i = 0;
 	PvResult result = stream.RetrieveBuffer(&buffer, &opResult, 1000);
 	if (result.IsOK()) {
 		if (opResult.IsOK()) {
@@ -117,7 +114,7 @@ void Framegrabber::data_loop() {
 	else {
 		iomanager->error(__FUNCTION__, "Could not retrieve buffer");
 		char errstr[64];
-		sprintf_s(errstr, 64, "%s, %s", result.GetCodeString().GetAscii(), opResult.GetCodeString().GetAscii());
+		snprintf(errstr, 64, "%s, %s", result.GetCodeString().GetAscii(), opResult.GetCodeString().GetAscii());
 		iomanager->error(__FUNCTION__, errstr);
 		PvStreamInfo info(&stream);
 		iomanager->info(__FUNCTION__, info.GetErrors().GetAscii());
@@ -136,7 +133,7 @@ std::pair<int, int> Framegrabber::small_to_large(int x, int y)
 }
 
 bool Framegrabber::Connect() {
-	PvDeviceInfo *dev_info = select_sole_device();
+	PvDeviceInfoGEV *dev_info = select_sole_device();
 
 	if (dev_info == nullptr) {
 		iomanager->fatal("No device found");
@@ -147,6 +144,7 @@ bool Framegrabber::Connect() {
 	sprintf(msgbuf, "Connecting to device %s at %s", dev_info->GetMACAddress().GetAscii(),
 		dev_info->GetIPAddress().GetAscii());
 	iomanager->info(__FUNCTION__, msgbuf);
+  
 	if (!device.Connect(dev_info).IsOK()) {
 		sprintf(msgbuf, "Unable to connect to %s", dev_info->GetMACAddress().GetAscii());
 		iomanager->fatal(msgbuf);
@@ -157,7 +155,11 @@ bool Framegrabber::Connect() {
 		iomanager->info(__FUNCTION__, msgbuf);
 	}
 
-	params = device.GetGenParameters();
+#ifdef EBUS_VERSION_3
+  params = device.GetGenParameters();
+#else
+  params = device.GetParameters();
+#endif
 	TLLocked = dynamic_cast<PvGenInteger *>(params->Get("TLParamsLocked"));
 	payload_size = dynamic_cast<PvGenInteger *>(params->Get("PayloadSize"));
 	start = dynamic_cast<PvGenCommand *>(params->Get("AcquisitionStart"));
@@ -170,7 +172,7 @@ bool Framegrabber::Connect() {
 
 	device.SetStreamDestination(stream.GetLocalIPAddress(), stream.GetLocalPort());
 
-	PvInt64 size = 0;
+	int64_t size = 0;
 	payload_size->GetValue(size);
 
 	auto &cfg_bufcount = config.fg_config.bufcount;
@@ -180,7 +182,7 @@ bool Framegrabber::Connect() {
 	
 	buffers = new PvBuffer[buffer_count];
 	for (uint32_t i = 0; i < buffer_count; i++) {
-		buffers[i].Alloc(static_cast<PvUInt32>(size));
+		buffers[i].Alloc(static_cast<uint32_t>(size));
 	}
 
 	for (uint32_t i = 0; i < buffer_count; i++) {

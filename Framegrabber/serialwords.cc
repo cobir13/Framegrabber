@@ -31,7 +31,7 @@ SerialWords::SerialWords(Framegrabber *fg) {
 
 
 
-bool SerialWords::write_words(PvDevice * dev) {
+bool SerialWords::write_words(PvDeviceGEV *dev) {
 	bool status = true;
 
 	if (waxy_updated) {
@@ -71,7 +71,7 @@ inline uint32_t SerialWords::get_way_pkt(uint8_t way) {
 	return pkt;
 }
 
-bool SerialWords::write_waxy(PvDevice * dev)
+bool SerialWords::write_waxy(PvDeviceGEV * dev)
 {
 	uint32_t regs[][2] = {
 		{ 0x00001E1E, 0x00001F14 },
@@ -91,7 +91,7 @@ bool SerialWords::write_waxy(PvDevice * dev)
 		PvResult word_status = dev->WriteRegister(serial_register, regs[i][1]).IsFailure();
 		if (!dest_status.IsOK() || !word_status.IsOK()) {
 			char msgbuf[512];
-			sprintf_s(msgbuf, 512, "Could not write registers %x, %x", regs[i][0], regs[i][1]);
+			snprintf(msgbuf, 512, "Could not write registers %x, %x", regs[i][0], regs[i][1]);
 			grabber->iomanager->warning(__FUNCTION__, msgbuf);
 			grabber->iomanager->info(__FUNCTION__, dest_status.GetCodeString().GetAscii());
 			grabber->iomanager->info(__FUNCTION__, word_status.GetCodeString().GetAscii());
@@ -101,7 +101,7 @@ bool SerialWords::write_waxy(PvDevice * dev)
 	return true;
 }
 
-bool SerialWords::write_tint(PvDevice * dev)
+bool SerialWords::write_tint(PvDeviceGEV * dev)
 {
 	std::unordered_map<int, uint32_t>::const_iterator r = tint_table.find(tint);
 	if (r == tint_table.end()) {

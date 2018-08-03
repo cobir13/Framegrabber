@@ -3,7 +3,7 @@
 
 #include <unordered_map>
 #include <stdint.h>
-#include <PvDevice.h>
+#include "ebus.h"
 
 class Framegrabber;
 
@@ -33,7 +33,7 @@ public:
 		tint_updated = true;
 	}
 
-	bool write_words(PvDevice *dev);
+	bool write_words(PvDeviceGEV *dev);
 
 
 	bool valid_tint(int tint);
@@ -54,9 +54,9 @@ private:
 	inline uint32_t get_wax_pkt(uint8_t wax);
 	inline uint32_t get_way_pkt(uint8_t way);
 
-	bool write_waxy(PvDevice *dev);
+	bool write_waxy(PvDeviceGEV *dev);
 
-	bool write_tint(PvDevice *dev);
+	bool write_tint(PvDeviceGEV *dev);
 	
 };
 

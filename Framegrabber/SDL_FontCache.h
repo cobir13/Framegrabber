@@ -33,8 +33,9 @@ THE SOFTWARE.
 #ifndef _SDL_FONTCACHE_H__
 #define _SDL_FONTCACHE_H__
 
-#include "SDL.h"
-#include "SDL_ttf.h"
+#pragma clang diagnostic ignored "-Wdocumentation"
+#include <SDL.h>
+#include <SDL_ttf.h>
 
 #ifdef FC_USE_SDL_GPU
     #include "SDL_gpu.h"

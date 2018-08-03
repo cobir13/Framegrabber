@@ -48,7 +48,6 @@ int main(int argc, char **argv) {
 	}
 	try {
 		while (1) FGloop(&grabber);
-		grabber.Disconnect();
 	}
 	catch (std::exception) {}
     
