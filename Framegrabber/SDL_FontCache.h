@@ -33,7 +33,7 @@ THE SOFTWARE.
 #ifndef _SDL_FONTCACHE_H__
 #define _SDL_FONTCACHE_H__
 
-
+#pragma clang diagnostic ignored "-Wdocumentation"
 #include <SDL.h>
 #include <SDL_ttf.h>
 

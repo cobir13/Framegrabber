@@ -17,7 +17,7 @@
 #include <eBUS/PvResult.h>
 #include <eBUS/PvSystem.h>
 #include <eBUS/PvStreamInfo.h>
-#define EBUS_VERSION_5
+#include <eBus/PvVersion.h>
 #else
 #include <PvDevice.h>
 #include <PvGenParameterArray.h>
@@ -26,11 +26,13 @@
 #include <PvResult.h>
 #include <PvSystem.h>
 #include <PvStreamInfo.h>
-#define EBUS_VERSION_3
+#include <PvVersion.h
 #endif
 
-//This code was written for eBUS SDK v3.x, and we need to keep supporting it.
-#ifdef EBUS_VERSION_3
+// This code was written for eBUS SDK v3.x, and we need to keep supporting it.
+// This is a little hacky, but originally eBUS only supported GEV devices (no USB3)
+// so the old PvDevice is very similar to today's PvDeviceGEV
+#if VERSION_MAJOR < 5
 typedef PvDevice PvDeviceGEV;
 typedef PvStream PvStreamGEV;
 typedef PvDeviceInfo PvDeviceInfoGEV;
