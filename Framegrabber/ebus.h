@@ -26,7 +26,7 @@
 #include <PvResult.h>
 #include <PvSystem.h>
 #include <PvStreamInfo.h>
-#include <PvVersion.h
+#include <PvVersion.h>
 #endif
 
 // This code was written for eBUS SDK v3.x, and we need to keep supporting it.
