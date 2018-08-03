@@ -3,3 +3,9 @@ Release/*
 *.enc
 *.pdb
 *.idb
+SDL2-2.0.8/*
+SDL2_ttf-2.0.14/*
+cpptoml/*
+__pycache__/*
+*.db
+*.md

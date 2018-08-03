@@ -155,7 +155,7 @@ bool Framegrabber::Connect() {
 		iomanager->info(__FUNCTION__, msgbuf);
 	}
 
-#ifdef EBUS_VERSION_3
+#if VERSION_MAJOR < 5
   params = device.GetGenParameters();
 #else
   params = device.GetParameters();
