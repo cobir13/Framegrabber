@@ -111,9 +111,6 @@ void FocuserGraph::update() {
   draw_plotbox();
 }
 
-
-
-
 void FocuserGraph::calculate_plotsize() {
   plot_x = window_x - (margin_r+margin_l);
   plot_y = window_y - (margin_t+margin_b);
