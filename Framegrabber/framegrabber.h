@@ -26,6 +26,12 @@ typedef struct {
 		int scaling;
 		int text_height;
 	} window;
+  struct {
+    int width;
+    int height;
+    int font_size;
+    int fps;
+  } focusergraph;
 } FramegrabberConfig;
 
 class IOManager;

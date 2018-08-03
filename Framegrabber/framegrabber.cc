@@ -80,6 +80,11 @@ void Framegrabber::load_config(const char *configfile)
 	config.window.fps = config_table->get_qualified_as<int>("window.fps").value_or(50);
 	config.window.scaling = config_table->get_qualified_as<int>("window.scaling").value_or(10);
 	config.window.text_height = config_table->get_qualified_as<int>("window.text_height").value_or(20);
+  
+  config.focusergraph.fps = config_table->get_qualified_as<int>("focusergraph.fps").value_or(20);
+  config.focusergraph.height = config_table->get_qualified_as<int>("focusergraph.height").value_or(600);
+  config.focusergraph.width = config_table->get_qualified_as<int>("focusergraph.width").value_or(600);
+  config.focusergraph.font_size = config_table->get_qualified_as<int>("focusergraph.height").value_or(16);
 }
 
 void Framegrabber::data_loop() {

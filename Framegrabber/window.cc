@@ -31,7 +31,7 @@ void Window::init(Framegrabber *grabber) {
 	
 	ms_per_frame = 1000/windowconfig.fps;
 
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+	if (!SDL_WasInit(SDL_INIT_VIDEO) && SDL_Init(SDL_INIT_VIDEO) < 0) {
 
 		throw std::runtime_error("Could not initialize SDL2");
 	}
