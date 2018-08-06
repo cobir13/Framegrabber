@@ -11,6 +11,7 @@
 #include "fullframe_framegrabber_app.h"
 #include "window.h"
 #include "query.h"
+#include "focusergraph.h"
 
 
 static const char *helpmsg = "\n"\
@@ -264,6 +265,9 @@ bool IOManager::new_app(std::string appname, std::string argstring) {
 		else if (appname == "window") {
 			newapp = new Window(grabber, args);
 		}
+    else if (appname == "graph") {
+      newapp = new FocuserGraph(grabber, args);
+    }
 		else if (appname == "query") {
 			newapp = new PixelQuery(grabber, args);
 		}

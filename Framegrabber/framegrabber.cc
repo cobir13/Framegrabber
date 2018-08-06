@@ -8,7 +8,7 @@
 
 Framegrabber::Framegrabber() {
 	printf("Loading configuration...\n");
-	load_config("../framegrabber.cfg");
+	load_config("/Users/Thomas/Documents/Framegrabber/framegrabber.cfg");
 	iomanager = new IOManager(this);
 	words = SerialWords(this);
 	auto &fgconfig = config.fg_config;
@@ -76,10 +76,16 @@ void Framegrabber::load_config(const char *configfile)
 	config.fg_config.img_w = config_table->get_qualified_as<int>("configuration.img_width").value_or(64);
 	config.fg_config.maxapps = config_table->get_qualified_as<int>("configuration.max_apps").value_or(512);
 	config.fg_config.bufcount = config_table->get_qualified_as<int>("configuration.buffer_count").value_or(64);
+  config.fg_config.font = config_table->get_qualified_as<std::string>("configuration.font").value_or("");
 
 	config.window.fps = config_table->get_qualified_as<int>("window.fps").value_or(50);
 	config.window.scaling = config_table->get_qualified_as<int>("window.scaling").value_or(10);
 	config.window.text_height = config_table->get_qualified_as<int>("window.text_height").value_or(20);
+  
+  config.focusergraph.fps = config_table->get_qualified_as<int>("focusergraph.fps").value_or(20);
+  config.focusergraph.height = config_table->get_qualified_as<int>("focusergraph.height").value_or(600);
+  config.focusergraph.width = config_table->get_qualified_as<int>("focusergraph.width").value_or(600);
+  config.focusergraph.font_size = config_table->get_qualified_as<int>("focusergraph.font_size").value_or(16);
 }
 
 void Framegrabber::data_loop() {
