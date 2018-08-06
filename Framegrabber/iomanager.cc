@@ -252,7 +252,7 @@ bool IOManager::new_app(std::string appname, std::string argstring) {
 	}
 
 	FramegrabberApp *newapp = NULL;
-	std::vector<std::string> args = split(argstring, ",");
+	std::vector<std::string> args = split(argstring, "$");
 
 	try {
 		if (appname == "focuser") {

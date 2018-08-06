@@ -9,7 +9,7 @@
 #ifndef ebus_h
 #define ebus_h
 
-#define MINIMUM_GEV_VERSION (5)
+
 
 #ifdef __APPLE__
 #include <eBUS/PvDeviceGEV.h>
@@ -34,7 +34,7 @@
 // This code was written for eBUS SDK v3.x, and we need to keep supporting it.
 // This is a little hacky, but originally eBUS only supported GEV devices (no USB3)
 // so the old PvDevice is very similar to today's PvDeviceGEV
-#if VERSION_MAJOR < MINIMUM_GEV_VERSION
+#if VERSION_MAJOR < 5
 typedef PvDevice PvDeviceGEV;
 typedef PvStream PvStreamGEV;
 typedef PvDeviceInfo PvDeviceInfoGEV;
