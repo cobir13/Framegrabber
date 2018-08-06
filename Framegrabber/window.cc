@@ -25,13 +25,15 @@ void Window::init(Framegrabber *grabber) {
 	framegrabber = grabber;
 	done = false;
 	auto &windowconfig = grabber->config.window;
+  mouse_x = 0;
+  mouse_y = 0;
 
 	font = FC_CreateFont();
 	
 	
 	ms_per_frame = 1000/windowconfig.fps;
 
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+	if (!SDL_WasInit(SDL_INIT_VIDEO) && SDL_Init(SDL_INIT_VIDEO) < 0) {
 
 		throw std::runtime_error("Could not initialize SDL2");
 	}
@@ -61,7 +63,7 @@ void Window::init(Framegrabber *grabber) {
 		throw std::runtime_error("Could not create SDL renderer");
 	}
 
-	if (!FC_LoadFont(font, renderer, "C:/Users/Keck Project/Documents/Framegrabber/Release/times.ttf",
+	if (!FC_LoadFont(font, renderer, grabber->config.fg_config.font.c_str(),
 		windowconfig.text_height-4, FC_MakeColor(0, 0, 0, 255), TTF_STYLE_NORMAL)) {
 		throw bad_parameter_exception("Could not load font");
 	}
