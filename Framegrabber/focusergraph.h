@@ -45,6 +45,7 @@ class FocuserGraph : public FramegrabberApp {
 public:
   FocuserGraph(Framegrabber *g, int x_center, int y_center, int min, int max);
   FocuserGraph(Framegrabber *g, std::vector<std::string> &args);
+  ~FocuserGraph();
   
   bool set_frame(uint16_t *data);
   bool save();

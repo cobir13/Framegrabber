@@ -35,7 +35,14 @@ FocuserGraph::FocuserGraph(Framegrabber *g, std::vector<std::string> &arglist) {
   init(g, x_c, y_c, min, max);
 }
 
+FocuserGraph::~FocuserGraph() {
+  SDL_DestroyRenderer(renderer);
+  SDL_DestroyWindow(window);
+}
+
 void FocuserGraph::init(Framegrabber *g, int x_c, int y_c, int min_a, int max_a) {
+  name = "FocuserGraph";
+  id = get_id();
   grabber = g;
   center_x = x_c;
   center_y = y_c;
@@ -68,13 +75,15 @@ void FocuserGraph::init(Framegrabber *g, int x_c, int y_c, int min_a, int max_a)
     throw std::runtime_error("Could not create SDL renderer");
   }
   
-  if (!FC_LoadFont(font, renderer, "C:/Users/Keck Project/Documents/Framegrabber/Release/times.ttf",
+  if (!FC_LoadFont(font, renderer, grabber->config.fg_config.font.c_str(),
                    graphconfig.font_size, FC_MakeColor(0, 0, 0, 255), TTF_STYLE_NORMAL)) {
     throw bad_parameter_exception("Could not load font");
   }
   
   //Set background color to white
-  SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, SDL_ALPHA_OPAQUE);
+  SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
+  
+
 }
 
 bool FocuserGraph::set_frame(uint16_t *data) {
@@ -107,8 +116,10 @@ void FocuserGraph::update() {
     }
   }
   
+  SDL_RenderClear(renderer);
   calculate_plotsize();
   draw_plotbox();
+  SDL_RenderPresent(renderer);
 }
 
 void FocuserGraph::calculate_plotsize() {
@@ -117,6 +128,7 @@ void FocuserGraph::calculate_plotsize() {
 }
 
 void FocuserGraph::draw_plotbox() {
+  SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, SDL_ALPHA_OPAQUE);
   // Draw the box the plot will be put in
   SDL_Rect plotbox = {margin_l, margin_t, plot_x, plot_y};
   SDL_RenderDrawRect(renderer, &plotbox);
@@ -142,4 +154,5 @@ void FocuserGraph::draw_plotbox() {
     SDL_RenderDrawLine(renderer, tick_left, ypos, tick_right, ypos);
     FC_Draw(font, renderer, yaxis-10, ypos, "%d", min + i);
   }
+  SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
 }

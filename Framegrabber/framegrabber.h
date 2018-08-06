@@ -20,6 +20,7 @@ typedef struct {
 		int img_w;
 		int maxapps;
 		int bufcount;
+    std::string font;
 	} fg_config;
 	struct {
 		int fps;
