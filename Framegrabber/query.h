@@ -7,19 +7,21 @@
 #include "framegrabber.h"
 class PixelQuery : public FramegrabberApp {
 public:
-	PixelQuery(Framegrabber *g, int x, int y);
+	PixelQuery(Framegrabber *g);
 	PixelQuery(Framegrabber *grabber, std::vector<std::string> &arglist);
 	~PixelQuery();
 
 	bool set_frame(uint16_t * data);
 	bool save();
-	void update() {};
+	void update();
+	void message(std::vector<std::string> &messageparts);
 private:
 	Framegrabber *grabber;
-	void init(Framegrabber *g, int savex, int savey);
+	void init(Framegrabber *g);
 	int x, y;
-
-	uint16_t pixval;
+	bool replyneeded;
+	bool dataupdated;
+	uint16_t returnval;
 };
 
 #endif //QUERY_H

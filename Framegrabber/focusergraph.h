@@ -8,7 +8,9 @@
 
 #ifndef focusergraph_hpp
 #define focusergraph_hpp
+#ifdef __APPLE__
 #pragma clang diagnostic ignored "-Wdocumentation"
+#endif //__APPLE__
 
 #include <stdio.h>
 #include <stdint.h>
@@ -37,6 +39,8 @@ class FocuserGraph : public FramegrabberApp {
   uint32_t last_update;
   bool should_update();
   bool updated;
+
+  bool pixel_outofrange;
   
   uint8_t ticksize;
   
@@ -50,12 +54,13 @@ public:
   bool set_frame(uint16_t *data);
   bool save();
   void update();
+  void message(std::vector<std::string> &msg_parts);
   
 private:
   void init(Framegrabber *g, int x_center, int y_center, int min, int maxs);
   void calculate_plotsize();
   void draw_plotbox();
-  void draw_x_ticks();
+  void draw_points();
   
 };
 

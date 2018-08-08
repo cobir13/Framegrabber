@@ -8,7 +8,7 @@
 
 Framegrabber::Framegrabber() {
 	printf("Loading configuration...\n");
-	load_config("/Users/Thomas/Documents/Framegrabber/framegrabber.cfg");
+	load_config("C:/Users/Keck Project/Documents/Framegrabber/framegrabber.cfg");
 	iomanager = new IOManager(this);
 	words = SerialWords(this);
 	auto &fgconfig = config.fg_config;
@@ -58,6 +58,7 @@ void Framegrabber::load_config(const char *configfile)
 {
 	std::vector<std::string> defaults_used;
 	std::shared_ptr<cpptoml::table> config_table;
+	remove("crash.txt");
 	try {
 		config_table = cpptoml::parse_file(configfile);
 	}

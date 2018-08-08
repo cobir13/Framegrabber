@@ -163,6 +163,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="focuser.cc" />
+    <ClCompile Include="focusergraph.cc" />
     <ClCompile Include="framegrabber.cc" />
     <ClCompile Include="fullframe_framegrabber_app.cc" />
     <ClCompile Include="iomanager.cc" />
@@ -176,6 +177,7 @@
   <ItemGroup>
     <ClInclude Include="exceptions.h" />
     <ClInclude Include="focuser.h" />
+    <ClInclude Include="focusergraph.h" />
     <ClInclude Include="framegrabber.h" />
     <ClInclude Include="framegrabber_app.h" />
     <ClInclude Include="fullframe_framegrabber_app.h" />
@@ -188,6 +190,9 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="communication.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

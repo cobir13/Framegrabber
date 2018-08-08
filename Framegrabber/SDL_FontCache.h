@@ -33,7 +33,9 @@ THE SOFTWARE.
 #ifndef _SDL_FONTCACHE_H__
 #define _SDL_FONTCACHE_H__
 
+#ifdef __APPLE__
 #pragma clang diagnostic ignored "-Wdocumentation"
+#endif //__APPLE__
 #include <SDL.h>
 #include <SDL_ttf.h>
 

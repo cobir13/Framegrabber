@@ -159,6 +159,10 @@ void Window::update() {
 	SDL_RenderPresent(renderer);	
 }
 
+void Window::message(std::vector<std::string>& messageparts) {
+	framegrabber->iomanager->error(name, "message not implemented");
+}
+
 bool Window::save() {
 	return true;
 }

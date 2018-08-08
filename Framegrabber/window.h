@@ -20,6 +20,8 @@ public:
 	bool save();
 	void update();
 
+	void message(std::vector<std::string> &messageparts);
+
 private:
 	uint32_t ms_per_frame;
 	uint16_t *framebuf;

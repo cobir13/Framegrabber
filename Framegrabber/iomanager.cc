@@ -12,6 +12,7 @@
 #include "window.h"
 #include "query.h"
 #include "focusergraph.h"
+#include "version.h"
 
 
 static const char *helpmsg = "\n"\
@@ -40,29 +41,35 @@ static const char *helpmsg = "\n"\
 "See the manual for details\n";
 
 
-// Splits up a string into parts based on a character. Similar to python .split
-std::vector<std::string> split(const std::string& str, const char *delims) {
-	std::vector<std::string> parts;
-	static char strbuf[1024];
-	strncpy(strbuf, str.c_str(), 1024);
-	char *ptbuf;
-	ptbuf = strtok(strbuf, delims);
-	while (ptbuf != NULL) {
-		parts.push_back(ptbuf);
-		ptbuf = strtok(NULL, delims);
-	}
-	return parts;
-}
 
+
+std::vector<std::string> IOManager::split_arglist(std::string &argstring) {
+	printf("Argstring is %s\n", argstring.c_str());
+	std::smatch args;
+	std::vector<std::string> arglist;
+	printf("Arglist is:\n");
+	std::string a = argstring;
+	std::string::const_iterator searchstr(argstring.cbegin());
+	while (std::regex_search(searchstr, argstring.cend(), args, match_argument)) {
+		arglist.push_back(args[0].str());
+		searchstr += args.position() + args.length();
+		printf("%s\n", args[0].str().c_str());
+	}
+
+
+	return arglist;
+}
 
 IOManager::IOManager(Framegrabber *g) {
 	grabber = g;
 	input = stdin;
 	output = stdout;
+	blocked = false;
 	logfile = fopen(grabber->config.communications.logfile.c_str(), "w");
 	printf("Log output will be directed to %s\n", grabber->config.communications.logfile.c_str());
 	
 	printf("Starting server...\n");
+	printf("Framegrabber v%d.%d\n", FG_MAJOR_VERSION, FG_MINOR_VERSION);
 	printf("%s", helpmsg);
 	printf("\nThis server cannot be interacted with via stdin.\n"\
 		"A ZeroMQ client is required.\n"\
@@ -84,6 +91,8 @@ IOManager::IOManager(Framegrabber *g) {
 	full_command = std::regex("\\s*(\\w*)\\s*(\\w*)\\s*\\(([^)]*)\\);\\s*");
 	stub_command = std::regex("\\s*(\\w*);\\s*");
 	extract_fp_pattern = std::regex("\\s*\"([^\"]*)\"\\s*");
+	// from http://www.regexguru.com/2009/04/split-is-not-always-the-best-way-to-split-a-string/
+	match_argument = std::regex("\\s*(\"[^\"]*\"|[^,]+)\\s*");
 }
 
 
@@ -115,6 +124,9 @@ bool IOManager::RunCommand(std::string input) {
 		}
 		else if (base == "KILLAPP") {
 			kill_app(appname);
+		}
+		else if (base == "MESSAGE") {
+			update_app(appname, args);
 		}
 		// Otherwise, return an error
 		else {
@@ -157,7 +169,7 @@ bool IOManager::ManageInput() {
 	static char combuf[1024];
 
 	//Handle input messages until there are none left
-	while (true) {
+	while (!blocked) {
 		//Reset errno in case someone else set it (led to a nasty crash a while back)
 		errno = 0;
 		// Receive a message, and put it in the buffer. Don't block if there is no message to receive.
@@ -180,7 +192,9 @@ bool IOManager::ManageInput() {
 		else {
 			combuf[msglen] = '\0';
 		}
-
+		// Don't accept any more input until this one's been dealt with
+		// Unblocked by either a success or error return message
+		blocked = true;
 		//Try to run our new string as a command
 		if (!RunCommand(std::string(combuf))) {
 			return false;
@@ -253,7 +267,7 @@ bool IOManager::new_app(std::string appname, std::string argstring) {
 	}
 
 	FramegrabberApp *newapp = NULL;
-	std::vector<std::string> args = split(argstring, "$");
+	std::vector<std::string> args = split_arglist(argstring);
 
 	try {
 		if (appname == "focuser") {
@@ -284,9 +298,8 @@ bool IOManager::new_app(std::string appname, std::string argstring) {
 	}
 	
 	grabber->apps.push_back(newapp);
-	if (newapp->reportsuccess) {
-		grabber->iomanager->success(newapp->getname(), std::to_string(newapp->id));
-	}
+	grabber->iomanager->success(newapp->getname(), std::to_string(newapp->id));
+
 	return true;
 	
 }
@@ -317,6 +330,44 @@ void IOManager::kill_app(std::string appid_str) {
 			delete *app;
 			grabber->apps.erase(app++);
 			success(std::to_string(appid), "Killed");
+			return;
+		}
+		else {
+			app++;
+		}
+	}
+	error(__FUNCTION__, "App not found");
+}
+
+void IOManager::update_app(std::string appid_str,  std::string argstring) {
+	std::vector<std::string> args;
+	try {
+		args = split_arglist(argstring);
+	}
+	catch (std::runtime_error &e) {
+		error(__FUNCTION__, e.what());
+	}
+
+	uint16_t appid;
+	try {
+		appid = std::stoi(appid_str);
+		if (appid > grabber->config.fg_config.maxapps) {
+			throw std::out_of_range("AppID out of range");
+		}
+		}
+	catch (std::invalid_argument) {
+		error(__FUNCTION__, "Bad AppID [Did you pass the name instead of the ID?]");
+		return;
+	}
+	catch (std::out_of_range) {
+		error(__FUNCTION__, "AppID out of range");
+		return;
+	}
+
+	auto app = grabber->apps.begin();
+	while (app != grabber->apps.end()) {
+		if ((*app)->id == appid) {
+			(*app)->message(args);
 			return;
 		}
 		else {
@@ -371,12 +422,14 @@ void IOManager::error(std::string subject, std::string message){
 	log("ERROR", subject.c_str(), message.c_str());
 	sprintf(msgbuf, "ERROR %s (%s);\n", subject.c_str(), message.c_str());
 	zmq_send(zmq_responder, msgbuf, strlen(msgbuf), 0);
+	blocked = false;
 }
 
 void IOManager::success(std::string subject, std::string message) {
 	log("SUCCESS", subject.c_str(), message.c_str());
 	sprintf(msgbuf, "SUCCESS %s (%s);\n", subject.c_str(), message.c_str());
 	zmq_send(zmq_responder, msgbuf, strlen(msgbuf), 0);
+	blocked = false;
 }
 
 void IOManager::fatal(std::string message) {

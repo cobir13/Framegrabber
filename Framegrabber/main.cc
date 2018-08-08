@@ -7,6 +7,8 @@
 #include "fullframe_framegrabber_app.h"
 #include "window.h"
 
+
+
 FGAPP_INIT;
 
 void FGloop(Framegrabber *grabber) {

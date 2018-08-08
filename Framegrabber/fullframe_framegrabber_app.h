@@ -18,6 +18,8 @@ public:
 	//Nothing to do every update.
 	void update(){};
 
+	void message(std::vector<std::string> &messageparts);
+
 private:
 	Framegrabber *grabber;
 	int curframe;

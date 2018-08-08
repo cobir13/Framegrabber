@@ -88,3 +88,7 @@ bool Focuser::save() {
 		return false;
 	}
 }
+
+void Focuser::message(std::vector<std::string>& messageparts) {
+	grabber->iomanager->error(name, "message not implemented");
+}

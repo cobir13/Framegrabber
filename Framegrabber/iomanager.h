@@ -7,7 +7,9 @@
 class Framegrabber;
 
 class IOManager {
+	const char *delims = "$";
 public:
+	std::vector<std::string> split_arglist(std::string & argstring);
 	IOManager(Framegrabber *grabber);
 	~IOManager();
 	bool RunCommand(std::string input);
@@ -31,14 +33,18 @@ private:
 	void *zmq_responder;
 	Framegrabber *grabber;
 
+	bool blocked;
+
 	std::regex full_command;
 	std::regex stub_command;
 	std::regex extract_fp_pattern;
+	std::regex match_argument;
 
 	bool write_word(std::string word, std::string val);
 	bool read_word(std::string word);
 	bool new_app(std::string word, std::string argstring);
 	void kill_app(std::string appid);
+	void update_app(std::string appid_str, std::string argstring);
 
 	void log(const char *msg);
 	void log(const char *type, const char *msg);

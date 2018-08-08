@@ -4,52 +4,63 @@
 
 
 
-PixelQuery::PixelQuery(Framegrabber *g, int x, int y) {
-
+PixelQuery::PixelQuery(Framegrabber *g) {
+	init(grabber);
 }
 
 PixelQuery::PixelQuery(Framegrabber * grabber, std::vector<std::string>& arglist) {
-	if (arglist.size() != 2) {
-		throw bad_parameter_exception("2 parameters required!");
+	if (arglist.size() != 0) {
+		throw bad_parameter_exception("No parameters required! Use update method to query pixel");
 	}
-	int savex, savey;
-
-	try {
-		savex = stoi(arglist[0]);
-		savey = stoi(arglist[1]);
-	}
-	catch (std::invalid_argument &iarg) {
-		throw bad_parameter_exception(iarg.what());
-	}
-	catch (std::overflow_error &oe) {
-		throw bad_parameter_exception(oe.what());
-	}
-	init(grabber, savex, savey);
+	init(grabber);
 }
 
 
-PixelQuery::~PixelQuery()
-{
-}
+PixelQuery::~PixelQuery() { }
 
 bool PixelQuery::set_frame(uint16_t * data)
 {
-	pixval = *(data + grabber->width * y + x);
-	done = true;
+	if (replyneeded) {
+		returnval = data[y*grabber->width + y];
+		dataupdated = true;
+	}
 	return true;
 }
 
 bool PixelQuery::save()
 {
-	grabber->iomanager->success(name, std::to_string(pixval));
 	return true;
 }
 
-void PixelQuery::init(Framegrabber * g, int savex, int savey) {
+void PixelQuery::update() {
+	if (replyneeded && dataupdated) {
+		grabber->iomanager->success(name, std::to_string(returnval));
+		replyneeded = false;
+		dataupdated = false;
+	}
+}
+
+void PixelQuery::message(std::vector<std::string>& messageparts) {
+	try {
+		x = std::stoi(messageparts[0]);
+		y = std::stoi(messageparts[1]);
+		if (x < 0 || x > (int)grabber->width || y < 0 || y > (int)grabber->height) {
+			throw std::out_of_range("");
+		}
+	}
+	catch (std::invalid_argument) {
+		grabber->iomanager->error(__FUNCTION__, "Invalid argument");
+		return;
+	}
+	catch (std::out_of_range) {
+		grabber->iomanager->error(__FUNCTION__, "Argument out of range");
+		return;
+	}
+	replyneeded = true;
+}
+
+void PixelQuery::init(Framegrabber * g) {
 	name = "PixelQuery";
 	grabber = g;
-	x = savex;
-	y = savey;
-	reportsuccess = false;
 	done = false;
 }

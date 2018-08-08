@@ -16,7 +16,11 @@ void FullFrame::init(Framegrabber *g, int numf, std::string dest_str) {
 
 	width = g->width;
 	height = g->height;
-	fbuf = (uint16_t*)calloc(sizeof(uint16_t), numframes*width*height);
+	size_t bufsize = numframes*width*height;
+	if (bufsize > UINT32_MAX) {
+		throw std::runtime_error("TIFF format only supports files of up to 4GB");
+	}
+	fbuf = (uint16_t*)calloc(sizeof(uint16_t), bufsize);
 	if (!fbuf) {
 		throw std::bad_alloc();
 	}
@@ -88,4 +92,8 @@ bool FullFrame::save() {
 		grabber->iomanager->fatal("Exiting on save failure");
 		return false;
 	}
+}
+
+void FullFrame::message(std::vector<std::string>& messageparts) {
+	grabber->iomanager->error(name, "Message not implemented");
 }

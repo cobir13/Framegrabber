@@ -2,6 +2,8 @@
 #define FRAMEGRABBER_APP_H
 #include <stdint.h>
 #include <stdexcept>
+#include <vector>
+#include <string>
 
 #define FGAPP_INIT uint16_t FramegrabberApp::cur_id = 0
 
@@ -9,11 +11,7 @@
 class FramegrabberApp {
 public:
 	virtual ~FramegrabberApp() {};
-	// Should the app manager report successful creation of the app?
-	// For most apps, this should be true
-	// If your app only runs for a frame or so, and returns info in its SUCCESS,
-	// set this to false in your constructor
-	bool reportsuccess = true;
+
 
 	// Set this to true when your app is finished and should be saved
 	bool done = false;
@@ -27,6 +25,8 @@ public:
 	virtual void update() = 0;
 	// Set this with get_id() in your constructor
 	uint16_t id;
+
+	virtual void message(std::vector<std::string> &messageparts) = 0;
 
 
 	// Leave these alone---they should be the same for all apps

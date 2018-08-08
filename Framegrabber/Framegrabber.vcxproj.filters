@@ -45,6 +45,9 @@
     <ClCompile Include="SDL_FontCache.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="focusergraph.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framegrabber.h">
@@ -80,8 +83,14 @@
     <ClInclude Include="SDL_FontCache.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="focusergraph.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="communication.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
 </Project>
