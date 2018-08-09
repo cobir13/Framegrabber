@@ -69,7 +69,7 @@ IOManager::IOManager(Framegrabber *g) {
 	printf("Log output will be directed to %s\n", grabber->config.communications.logfile.c_str());
 	
 	printf("Starting server...\n");
-	printf("Framegrabber v%d.%d\n", FG_MAJOR_VERSION, FG_MINOR_VERSION);
+	printf("Framegrabber v%d.%d.%d\n", FG_MAJOR_VERSION, FG_MINOR_VERSION, FG_SUBMINOR_VERSION);
 	printf("%s", helpmsg);
 	printf("\nThis server cannot be interacted with via stdin.\n"\
 		"A ZeroMQ client is required.\n"\
@@ -83,7 +83,7 @@ IOManager::IOManager(Framegrabber *g) {
 	snprintf(connectbuf, 32, "tcp://%s:%d", grabber->config.communications.ip_addr.c_str(),
 		grabber->config.communications.port);
 	if (zmq_bind(zmq_responder, connectbuf)) {
-		throw std::runtime_error("Could not bind ZeroMQ socket!");
+		fatal("Cannot run more than one instance of the framegrabber at once.");
 	}
 
 	printf("Server ready\n");

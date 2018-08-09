@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdexcept>
+#include <chrono>
 #include "fullframe_framegrabber_app.h"
 #include "iomanager.h"
 #include "exceptions.h"
@@ -12,7 +13,13 @@ void FullFrame::init(Framegrabber *g, int numf, std::string dest_str) {
 	numframes = numf;
 	curframe = 0;
 	dest = dest_str;
-	done = false;
+	status = FGAPP_ACQUIRE;
+	current_save_frame = 0;
+
+	tif = TinyTIFFWriter_open(dest.c_str(), 16, width, height);
+	if (!tif) {
+		throw std::runtime_error("Could not get lock on TIF save file");
+	}
 
 	width = g->width;
 	height = g->height;
@@ -60,40 +67,65 @@ FullFrame::~FullFrame() {
 }
 
 bool FullFrame::set_frame(uint16_t *data) {
-	if (!done) {
+	if (status == FGAPP_ACQUIRE) {
 		uint16_t *current_buf = fbuf + (width*height*curframe);
 		memcpy(current_buf, data, width*height * sizeof(uint16_t));
 		curframe++;
 
 		if (curframe >= numframes) {
-			done = true;
+			status = FGAPP_SAVING;
 		}
 	}
 	return true;
 }
 
 bool FullFrame::save() {
-	grabber->iomanager->info(name, "Saving");
-	TinyTIFFFile *tif = TinyTIFFWriter_open(dest.c_str(), 16, width, height);
-	if (tif) {
-		for (int frame = 0; frame < numframes; frame++) {
-			uint8_t *bufptr = (uint8_t*)fbuf + width*height * 2 * frame;
-			TinyTIFFWriter_writeImage(tif, bufptr);
-		}
-		TinyTIFFWriter_close(tif);
-		grabber->iomanager->info(name, "Saved");
-    return true;
+	TinyTIFFWriter_close(tif);
+	return true;
+}
+
+void FullFrame::update() {
+	if (status != FGAPP_SAVING) {
+		return;
 	}
-	else {
-		char warnbuf[48];
-		snprintf(warnbuf, 48, "w=%d, h=%d, tif=%p, dest='%s'", width, height, (void*)tif, dest.c_str());
-		grabber->iomanager->warning(name, warnbuf);
-		grabber->iomanager->warning(name, "Save error!");
-		grabber->iomanager->fatal("Exiting on save failure");
-		return false;
+	typedef std::chrono::high_resolution_clock Time;
+	typedef std::chrono::microseconds us;
+	typedef std::chrono::duration<uint64_t, us> duration;
+	auto t0 = Time::now();
+	auto t1 = Time::now();
+
+	for ((void)0;
+	  std::chrono::duration_cast<us>(t1 - t0) < us(1000) && current_save_frame < numframes;
+	  current_save_frame++) {
+		uint8_t *bufptr = (uint8_t*)fbuf + width*height * 2 * current_save_frame;
+		TinyTIFFWriter_writeImage(tif, bufptr);
+		t1 = Time::now();
+	}
+	if (current_save_frame >= numframes) {
+		status = FGAPP_DONE;
 	}
 }
 
 void FullFrame::message(std::vector<std::string>& messageparts) {
-	grabber->iomanager->error(name, "Message not implemented");
+	if (messageparts[0] == "status") {
+		std::string state;
+		switch (status) {
+		case FGAPP_ACQUIRE:
+			state = "Acquiring frames";
+			break;
+		case FGAPP_SAVING:
+			state = "Saving frames";
+			break;
+		case FGAPP_DONE:
+			state = "Done";
+			break;
+		default:
+			grabber->iomanager->error(name, "Internal status error---corrupted status");
+			return;
+		}
+		grabber->iomanager->success(name, state);
+	}
+	else {
+		grabber->iomanager->error(name, "Unahndled message");
+	}
 }

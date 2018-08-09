@@ -86,6 +86,9 @@
     <ClInclude Include="focusergraph.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="communication.txt" />

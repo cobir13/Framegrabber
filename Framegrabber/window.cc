@@ -23,7 +23,7 @@ void Window::init(Framegrabber *grabber) {
 	name = "Window";
 	id = get_id();
 	framegrabber = grabber;
-	done = false;
+	status = FGAPP_ACQUIRE;
 	auto &windowconfig = grabber->config.window;
   mouse_x = 0;
   mouse_y = 0;
@@ -103,7 +103,7 @@ bool Window::should_update() {
 }
 
 bool Window::set_frame(uint16_t *data) {
-	if (done || !should_update()) {
+	if (status != FGAPP_ACQUIRE || !should_update()) {
 		return true;
 	}
 
@@ -121,7 +121,7 @@ void Window::update() {
 		case SDL_WINDOWEVENT:
 			switch (e.window.event) {
 			case SDL_WINDOWEVENT_CLOSE:
-				done = true;
+				status = FGAPP_DONE;
 				break;
 			}
 			break;

@@ -62,5 +62,6 @@ void PixelQuery::message(std::vector<std::string>& messageparts) {
 void PixelQuery::init(Framegrabber * g) {
 	name = "PixelQuery";
 	grabber = g;
-	done = false;
+	status = FGAPP_ACQUIRE;
+	id = get_id();
 }

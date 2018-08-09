@@ -186,6 +186,7 @@
     <ClInclude Include="SDL_FontCache.h" />
     <ClInclude Include="serialwords.h" />
     <ClInclude Include="TinyTIFF\tinytiffwriter.h" />
+    <ClInclude Include="version.h" />
     <ClInclude Include="window.h" />
   </ItemGroup>
   <ItemGroup>

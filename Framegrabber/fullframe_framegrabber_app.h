@@ -3,6 +3,7 @@
 
 #include "framegrabber.h"
 #include "framegrabber_app.h"
+#include "TinyTIFF/tinytiffwriter.h"
 #include <string>
 #include <vector>
 
@@ -15,8 +16,7 @@ public:
 	bool set_frame(uint16_t * data);
 	bool save();
 
-	//Nothing to do every update.
-	void update(){};
+	void update();
 
 	void message(std::vector<std::string> &messageparts);
 
@@ -27,6 +27,9 @@ private:
 	std::string dest;
 	uint16_t *fbuf;
 	uint32_t width, height;
+	FGAppStatus status;
+	TinyTIFFFile *tif;
+	uint64_t current_save_frame;
 
   void init(Framegrabber *grabber, int numframes, std::string dest);
 };

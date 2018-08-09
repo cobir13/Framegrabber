@@ -40,7 +40,7 @@ void Focuser::init(Framegrabber *g, int numf, std::string dest_str, int savex, i
 	numframes = numf;
 	curframe = 0;
 	dest = dest_str;
-	done = false;
+	status = FGAPP_ACQUIRE;
 	x = savex;
 	y = savey;
 
@@ -55,12 +55,12 @@ Focuser::~Focuser() {
 
 //Copy data from the stream buffer to the internal buffer
 bool Focuser::set_frame(uint16_t *data) {
-	if (!done) {
+	if (status == FGAPP_ACQUIRE) {
 		fbuf[curframe] = *(data + width*y + x);
 		curframe++;
 
 		if (curframe >= numframes) {
-			done = true;
+			status = FGAPP_DONE;
 		}
 	}
 	return true;

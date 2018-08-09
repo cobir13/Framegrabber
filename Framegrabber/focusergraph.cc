@@ -111,7 +111,7 @@ void FocuserGraph::update() {
       case SDL_WINDOWEVENT:
         switch (e.window.event) {
           case SDL_WINDOWEVENT_CLOSE:
-            done = true;
+            status = FGAPP_DONE;
             break;
             
           default:

@@ -7,6 +7,12 @@
 
 #define FGAPP_INIT uint16_t FramegrabberApp::cur_id = 0
 
+typedef enum {
+	FGAPP_DONE,
+	FGAPP_SAVING,
+	FGAPP_ACQUIRE,
+} FGAppStatus;
+
 
 class FramegrabberApp {
 public:
@@ -14,7 +20,7 @@ public:
 
 
 	// Set this to true when your app is finished and should be saved
-	bool done = false;
+	FGAppStatus status;
 
 	// Override this method to define what to do when new data is received (typically, copy it to an internal buffer)
 	virtual bool set_frame(uint16_t *data) = 0;
