@@ -30,7 +30,7 @@ void FGloop(Framegrabber *grabber) {
 	auto app = grabber->apps.begin();
 	while (app != grabber->apps.end()) {
 		(*app)->update();
-		if ((*app)->status == FGAPP_DONE) {
+		if ((*app)->GetStatus() == FGAPP_DONE) {
 			(*app)->save();
 			delete *app;
 			grabber->apps.erase(app++);

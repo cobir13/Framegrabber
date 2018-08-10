@@ -20,11 +20,13 @@ typedef struct {
 		int img_w;
 		int maxapps;
 		int bufcount;
+		int us_per_frame;
     std::string font;
 	} fg_config;
 	struct {
 		int fps;
 		int scaling;
+		int ffscaling;
 		int text_height;
 	} window;
   struct {

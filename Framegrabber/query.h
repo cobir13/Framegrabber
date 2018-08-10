@@ -15,7 +15,9 @@ public:
 	bool save();
 	void update();
 	void message(std::vector<std::string> &messageparts);
+	FGAppStatus GetStatus() { return status; }
 private:
+	FGAppStatus status = FGAPP_ACQUIRE;
 	Framegrabber *grabber;
 	void init(Framegrabber *g);
 	int x, y;

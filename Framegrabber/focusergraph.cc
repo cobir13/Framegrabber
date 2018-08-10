@@ -58,6 +58,7 @@ void FocuserGraph::init(Framegrabber *g, int x_c, int y_c, int min_a, int max_a)
   window_x = 600;
   window_y = 600;
   ticksize = 10;
+  status = FGAPP_ACQUIRE;
   
   if (center_x < PIXEL_COUNT/2 || center_x > (grabber->width-PIXEL_COUNT/2)) {
     throw bad_parameter_exception("Center_x must not be within 4 pixels of the edge");

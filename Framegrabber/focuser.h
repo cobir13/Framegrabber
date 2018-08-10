@@ -19,7 +19,11 @@ public:
 	void update(){};
 	void message(std::vector<std::string> &messageparts);
 
+	FGAppStatus GetStatus() { return status; }
+
 private:
+	// Set this to FGAPP_DONE when your code is done and ready to be saved.
+	FGAppStatus status = FGAPP_ACQUIRE;
 	Framegrabber *grabber;
 	void init(Framegrabber *grabber, int numf, std::string dest_str, int savex, int savey);
 	int curframe;

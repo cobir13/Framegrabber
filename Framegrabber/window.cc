@@ -1,18 +1,14 @@
 #include "window.h"
 #include "iomanager.h"
 #include "exceptions.h"
+#include "tinycolormap/tinycolormap.hpp"
 #include <utility>
 
 
  uint32_t Window::grey16_to_rgba32(uint16_t pix) {
-	// We need to convert from a 14 bit number (in a 16 bit shell) to an 8-bit value.
-	uint8_t pix8 = (uint8_t)(pix); // pix / (2^14/2^8)
-	uint8_t result[4];
-	result[0] = SDL_ALPHA_OPAQUE;
-	result[1] = pix8;
-	result[2] = pix8;
-	result[3] = pix8;
-	return *(uint32_t*)(&result);
+	double greyscale = (double)pix/16383; // (pix//2^14) --- casts a 14-bit number to a val between 0 and 1
+	const tinycolormap::Color c = tinycolormap::GetColor(greyscale, tinycolormap::ColormapType::Viridis);
+	return SDL_MapRGBA(fmt, c.r()*UINT8_MAX, c.g()*UINT8_MAX, c.b()*UINT8_MAX, SDL_ALPHA_OPAQUE);
 }
 
 Window::Window(Framegrabber *grabber) { init(grabber); }
@@ -25,8 +21,8 @@ void Window::init(Framegrabber *grabber) {
 	framegrabber = grabber;
 	status = FGAPP_ACQUIRE;
 	auto &windowconfig = grabber->config.window;
-  mouse_x = 0;
-  mouse_y = 0;
+	mouse_x = 0;
+	mouse_y = 0;
 
 	font = FC_CreateFont();
 	
@@ -41,9 +37,12 @@ void Window::init(Framegrabber *grabber) {
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
 
 	framebuf = (uint16_t*)malloc(2 * grabber->width * grabber->height);
+	int scale = grabber->width < 100 ?
+		windowconfig.scaling :
+		windowconfig.ffscaling;
 
-	img_w = grabber->width * windowconfig.scaling;
-	img_h = grabber->height * windowconfig.scaling;
+	img_w = grabber->width * scale;
+	img_h = grabber->height * scale;
 
 	window = SDL_CreateWindow(
 		"Framegrabber Display",
@@ -83,6 +82,7 @@ void Window::init(Framegrabber *grabber) {
 		grabber->iomanager->error(name, SDL_GetError());
 		throw std::runtime_error("Could not create SDL texture");
 	}
+	fmt = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);
 
 	img_viewport = { 0,0,img_w, img_h };
 	text_viewport = { 0, img_h, img_w, windowconfig.text_height };

@@ -44,10 +44,8 @@ static const char *helpmsg = "\n"\
 
 
 std::vector<std::string> IOManager::split_arglist(std::string &argstring) {
-	printf("Argstring is %s\n", argstring.c_str());
 	std::smatch args;
 	std::vector<std::string> arglist;
-	printf("Arglist is:\n");
 	std::string a = argstring;
 	std::string::const_iterator searchstr(argstring.cbegin());
 	while (std::regex_search(searchstr, argstring.cend(), args, match_argument)) {
@@ -279,9 +277,9 @@ bool IOManager::new_app(std::string appname, std::string argstring) {
 		else if (appname == "window") {
 			newapp = new Window(grabber, args);
 		}
-    else if (appname == "graph") {
-      newapp = new FocuserGraph(grabber, args);
-    }
+		else if (appname == "graph") {
+		  newapp = new FocuserGraph(grabber, args);
+		}
 		else if (appname == "query") {
 			newapp = new PixelQuery(grabber, args);
 		}
@@ -289,6 +287,9 @@ bool IOManager::new_app(std::string appname, std::string argstring) {
 	catch (bad_parameter_exception) {
 		error(__FUNCTION__, "Parameter error");
 		return false;
+	}
+	catch (std::runtime_error &re) {
+		error(__FUNCTION__, re.what());
 	}
 
 	

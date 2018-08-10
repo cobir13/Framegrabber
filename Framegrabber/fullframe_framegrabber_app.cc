@@ -16,10 +16,7 @@ void FullFrame::init(Framegrabber *g, int numf, std::string dest_str) {
 	status = FGAPP_ACQUIRE;
 	current_save_frame = 0;
 
-	tif = TinyTIFFWriter_open(dest.c_str(), 16, width, height);
-	if (!tif) {
-		throw std::runtime_error("Could not get lock on TIF save file");
-	}
+	
 
 	width = g->width;
 	height = g->height;
@@ -29,7 +26,13 @@ void FullFrame::init(Framegrabber *g, int numf, std::string dest_str) {
 	}
 	fbuf = (uint16_t*)calloc(sizeof(uint16_t), bufsize);
 	if (!fbuf) {
-		throw std::bad_alloc();
+		throw std::runtime_error("Could not allocate buffer");
+	}
+
+	tif = TinyTIFFWriter_open(dest.c_str(), 16, width, height);
+	printf("Opened TIF\n");
+	if (!tif) {
+		throw std::runtime_error("Could not get lock on TIF save file");
 	}
 }
 
@@ -68,18 +71,21 @@ FullFrame::~FullFrame() {
 
 bool FullFrame::set_frame(uint16_t *data) {
 	if (status == FGAPP_ACQUIRE) {
+		printf("Acquiring frame %d/%d\n", curframe, numframes);
 		uint16_t *current_buf = fbuf + (width*height*curframe);
 		memcpy(current_buf, data, width*height * sizeof(uint16_t));
 		curframe++;
 
 		if (curframe >= numframes) {
 			status = FGAPP_SAVING;
+			grabber->iomanager->info(name, "Starting save");
 		}
 	}
 	return true;
 }
 
 bool FullFrame::save() {
+	grabber->iomanager->info(name, "Done saving");
 	TinyTIFFWriter_close(tif);
 	return true;
 }
@@ -95,7 +101,8 @@ void FullFrame::update() {
 	auto t1 = Time::now();
 
 	for ((void)0;
-	  std::chrono::duration_cast<us>(t1 - t0) < us(1000) && current_save_frame < numframes;
+	  std::chrono::duration_cast<us>(t1 - t0) < us(grabber->config.fg_config.us_per_frame) &&
+		current_save_frame < numframes;
 	  current_save_frame++) {
 		uint8_t *bufptr = (uint8_t*)fbuf + width*height * 2 * current_save_frame;
 		TinyTIFFWriter_writeImage(tif, bufptr);

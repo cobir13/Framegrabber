@@ -20,14 +20,18 @@ public:
 
 	void message(std::vector<std::string> &messageparts);
 
+	FGAppStatus GetStatus() { return status; }
+
 private:
+	// Set this to FGAPP_DONE when your code is done and ready to be saved.
+	FGAppStatus status = FGAPP_ACQUIRE;
+
 	Framegrabber *grabber;
 	int curframe;
 	int numframes;
 	std::string dest;
 	uint16_t *fbuf;
 	uint32_t width, height;
-	FGAppStatus status;
 	TinyTIFFFile *tif;
 	uint64_t current_save_frame;
 

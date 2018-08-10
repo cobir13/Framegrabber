@@ -18,10 +18,6 @@ class FramegrabberApp {
 public:
 	virtual ~FramegrabberApp() {};
 
-
-	// Set this to true when your app is finished and should be saved
-	FGAppStatus status;
-
 	// Override this method to define what to do when new data is received (typically, copy it to an internal buffer)
 	virtual bool set_frame(uint16_t *data) = 0;
 	// Override this to define the save and quit sequence for your app
@@ -29,6 +25,8 @@ public:
 	// Override this to define processing that may take a little long
 	// e.g. draw to the screen, or process data
 	virtual void update() = 0;
+
+	virtual FGAppStatus GetStatus() = 0;
 	// Set this with get_id() in your constructor
 	uint16_t id;
 

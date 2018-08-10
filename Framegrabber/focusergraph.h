@@ -55,8 +55,12 @@ public:
   bool save();
   void update();
   void message(std::vector<std::string> &msg_parts);
+
+  FGAppStatus GetStatus() { return status; }
   
 private:
+  // Set this to FGAPP_DONE when your code is done and ready to be saved.
+  FGAppStatus status = FGAPP_ACQUIRE;
   void init(Framegrabber *g, int x_center, int y_center, int min, int maxs);
   void calculate_plotsize();
   void draw_plotbox();

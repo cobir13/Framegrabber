@@ -21,8 +21,11 @@ public:
 	void update();
 
 	void message(std::vector<std::string> &messageparts);
+	FGAppStatus GetStatus() { return status; }
 
 private:
+
+	FGAppStatus status = FGAPP_ACQUIRE;
 	uint32_t ms_per_frame;
 	uint16_t *framebuf;
 	Framegrabber *framegrabber;
@@ -30,6 +33,7 @@ private:
 	SDL_Surface *surface;
 	SDL_Renderer *renderer;
 	SDL_Texture *texture;
+	SDL_PixelFormat *fmt;
 	uint32_t last_update;
 	bool should_update();
 	bool updated;
